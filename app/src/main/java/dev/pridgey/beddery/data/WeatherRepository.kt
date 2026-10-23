@@ -33,6 +33,8 @@ data class WeatherData(
     val precipitationChance: Int?,
     val hourly: List<HourForecast>,
     val fetchedAtMs: Long,
+    /** Every hour from now through tomorrow night. */
+    val allHours: List<HourForecast> = emptyList(),
 )
 
 /** Forecasts from Open-Meteo (free, no API key). Cached in memory for 30 minutes. */
@@ -91,6 +93,9 @@ object WeatherRepository {
                 isDay = days.getInt(i) == 1,
             )
         }
+        val all = (start until times.length()).map { i ->
+            HourForecast(LocalDateTime.parse(times.getString(i)), temps.getDouble(i).roundToInt(), codes.getInt(i), days.getInt(i) == 1)
+        }
         val precip = daily.optJSONArray("precipitation_probability_max")
         WeatherData(
             temp = current.getDouble("temperature_2m").roundToInt(),
@@ -102,6 +107,7 @@ object WeatherRepository {
             precipitationChance = precip?.takeIf { !it.isNull(0) }?.getInt(0),
             hourly = hours,
             fetchedAtMs = System.currentTimeMillis(),
+            allHours = all,
         )
     }
 

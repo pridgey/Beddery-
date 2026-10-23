@@ -70,7 +70,7 @@ fun SaverOptions(saverId: String, settings: AppSettings, viewModel: MainViewMode
     Text(stringResource(R.string.options), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(vertical = 8.dp))
     Column(Modifier.fillMaxWidth()) {
         when (saverId) {
-            "weather" -> WeatherOptions(settings, viewModel)
+            "weather", "window" -> WeatherOptions(settings, viewModel)
             "agenda", "month" -> CalendarOptions()
             "notifications" -> NotificationSettings(settings, viewModel)
             "pendulum" -> PendulumOptions(settings, viewModel)

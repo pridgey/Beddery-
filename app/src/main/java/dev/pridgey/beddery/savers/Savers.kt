@@ -4,6 +4,16 @@ import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ShowChart
 import androidx.compose.material.icons.rounded.AcUnit
+import androidx.compose.material.icons.rounded.LightMode
+import androidx.compose.material.icons.rounded.Window
+import androidx.compose.material.icons.rounded.Stars
+import androidx.compose.material.icons.rounded.Highlight
+import androidx.compose.material.icons.rounded.Train
+import androidx.compose.material.icons.rounded.Pets
+import androidx.compose.material.icons.rounded.Pool
+import androidx.compose.material.icons.rounded.HourglassBottom
+import androidx.compose.material.icons.rounded.Bed
+import androidx.compose.material.icons.rounded.Widgets
 import androidx.compose.material.icons.rounded.Landscape
 import androidx.compose.material.icons.rounded.Terrain
 import androidx.compose.material.icons.rounded.Lens
@@ -63,6 +73,16 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.vector.ImageVector
 import dev.pridgey.beddery.R
 import dev.pridgey.beddery.savers.impl.AgendaSaver
+import dev.pridgey.beddery.savers.impl.SunriseSaver
+import dev.pridgey.beddery.savers.impl.WeatherWindowSaver
+import dev.pridgey.beddery.savers.impl.SkyTonightSaver
+import dev.pridgey.beddery.savers.impl.LighthouseSaver
+import dev.pridgey.beddery.savers.impl.TrainSaver
+import dev.pridgey.beddery.savers.impl.SleepingCatSaver
+import dev.pridgey.beddery.savers.impl.AquariumSaver
+import dev.pridgey.beddery.savers.impl.HourglassSaver
+import dev.pridgey.beddery.savers.impl.TinyRoomSaver
+import dev.pridgey.beddery.savers.impl.BlockClockSaver
 import dev.pridgey.beddery.savers.impl.RidgelinesSaver
 import dev.pridgey.beddery.savers.impl.ContoursSaver
 import dev.pridgey.beddery.savers.impl.OrbSaver
@@ -168,10 +188,14 @@ object Savers {
         Saver("bigtype", R.string.saver_bigtype, R.string.saver_bigtype_desc, C, Icons.Rounded.FormatSize, true, showsNotifications = true) { BigTypeSaver(it) },
         Saver("rings", R.string.saver_rings, R.string.saver_rings_desc, C, Icons.Rounded.DonutLarge, true) { RingsClockSaver(it) },
         Saver("dayarc", R.string.saver_dayarc, R.string.saver_dayarc_desc, C, Icons.Rounded.WbSunny, true) { DayArcSaver(it) },
+        Saver("sunrise", R.string.saver_sunrise, R.string.saver_sunrise_desc, C, Icons.Rounded.LightMode, true) { SunriseSaver(it) },
+        Saver("hourglass", R.string.saver_hourglass, R.string.saver_hourglass_desc, C, Icons.Rounded.HourglassBottom, true) { HourglassSaver(it) },
         Saver("word", R.string.saver_word, R.string.saver_word_desc, C, Icons.Rounded.TextFields, true) { WordClockSaver(it) },
         Saver("nightlight", R.string.saver_nightlight, R.string.saver_nightlight_desc, C, Icons.Rounded.Bedtime, true) { NightlightSaver(it) },
         Saver("binary", R.string.saver_binary, R.string.saver_binary_desc, C, Icons.Rounded.Memory, true, showsNotifications = true) { BinaryClockSaver(it) },
         Saver("bounce", R.string.saver_bounce, R.string.saver_bounce_desc, C, Icons.AutoMirrored.Rounded.ShowChart, true) { BouncingClockSaver(it) },
+        Saver("blocks", R.string.saver_blocks, R.string.saver_blocks_desc, C, Icons.Rounded.Widgets, true) { BlockClockSaver(it) },
+        Saver("tinyroom", R.string.saver_tinyroom, R.string.saver_tinyroom_desc, C, Icons.Rounded.Bed, true) { TinyRoomSaver(it) },
 
         // Info
         Saver("battery_vial", R.string.saver_battery_vial, R.string.saver_battery_vial_desc, I, Icons.Rounded.Science, true) { ChargeVialSaver(it) },
@@ -181,11 +205,13 @@ object Savers {
         Saver("battery_cells", R.string.saver_battery_cells, R.string.saver_battery_cells_desc, I, Icons.Rounded.Battery5Bar, true) { PowerCellsSaver(it) },
         Saver("charging", R.string.saver_charging, R.string.saver_charging_desc, I, Icons.Rounded.BatteryChargingFull, true, showsNotifications = true) { ChargingSaver(it) },
         Saver("weather", R.string.saver_weather, R.string.saver_weather_desc, I, Icons.Rounded.WbCloudy, true, configurable = true, showsNotifications = true) { WeatherSaver(it) },
+        Saver("window", R.string.saver_window, R.string.saver_window_desc, I, Icons.Rounded.Window, true, configurable = true) { WeatherWindowSaver(it) },
         Saver("agenda", R.string.saver_agenda, R.string.saver_agenda_desc, I, Icons.Rounded.CalendarMonth, true, configurable = true, showsNotifications = true) { AgendaSaver(it) },
         Saver("notifications", R.string.saver_notifications, R.string.saver_notifications_desc, I, Icons.Rounded.Notifications, true, configurable = true) { NotificationsSaver(it) },
         Saver("sleep", R.string.saver_sleep, R.string.saver_sleep_desc, I, Icons.Rounded.Hotel, true, showsNotifications = true) { SleepSaver(it) },
         Saver("sleepcoach", R.string.saver_sleepcoach, R.string.saver_sleepcoach_desc, I, Icons.Rounded.EmojiEmotions, true) { SleepCoachSaver(it) },
         Saver("moon", R.string.saver_moon, R.string.saver_moon_desc, I, Icons.Rounded.DarkMode, true) { MoonPhaseSaver(it) },
+        Saver("skytonight", R.string.saver_skytonight, R.string.saver_skytonight_desc, I, Icons.Rounded.Stars, true) { SkyTonightSaver(it) },
         Saver("month", R.string.saver_month, R.string.saver_month_desc, I, Icons.Rounded.CalendarViewMonth, true, configurable = true) { MonthSaver(it) },
         Saver("progress", R.string.saver_progress, R.string.saver_progress_desc, I, Icons.Rounded.Timelapse, true) { ProgressSaver(it) },
         Saver("world", R.string.saver_world, R.string.saver_world_desc, I, Icons.Rounded.Public, true, configurable = true, showsNotifications = true) { WorldClockSaver(it) },
@@ -207,6 +233,10 @@ object Savers {
         Saver("candle", R.string.saver_candle, R.string.saver_candle_desc, R_, Icons.Rounded.Whatshot, false) { CandleSaver(it) },
         Saver("snow", R.string.saver_snow, R.string.saver_snow_desc, R_, Icons.Rounded.AcUnit, false) { SnowfallSaver(it) },
         Saver("koi", R.string.saver_koi, R.string.saver_koi_desc, R_, Icons.Rounded.SetMeal, false) { KoiPondSaver(it) },
+        Saver("lighthouse", R.string.saver_lighthouse, R.string.saver_lighthouse_desc, R_, Icons.Rounded.Highlight, false) { LighthouseSaver(it) },
+        Saver("train", R.string.saver_train, R.string.saver_train_desc, R_, Icons.Rounded.Train, false) { TrainSaver(it) },
+        Saver("cat", R.string.saver_cat, R.string.saver_cat_desc, R_, Icons.Rounded.Pets, false) { SleepingCatSaver(it) },
+        Saver("aquarium", R.string.saver_aquarium, R.string.saver_aquarium_desc, R_, Icons.Rounded.Pool, false) { AquariumSaver(it) },
 
         // Ambient
         Saver("starfield", R.string.saver_starfield, R.string.saver_starfield_refined_desc, A, Icons.Rounded.Star, false) { StarfieldRefinedSaver(it) },

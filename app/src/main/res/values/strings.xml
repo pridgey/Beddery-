@@ -64,15 +64,12 @@
     <string name="saver_breathe">Breathe</string>
     <string name="saver_breathe_desc">A guided breathing circle to help you unwind before sleep. Follow it in and out.</string>
     <string name="saver_ocean">Moonlit Ocean</string>
-    <string name="saver_ocean_desc">Slow waves under a full moon, with its reflection shimmering on the water.</string>
     <string name="saver_aurora">Aurora</string>
-    <string name="saver_aurora_desc">Northern lights ripple across a starry sky above the mountains.</string>
     <string name="saver_lava">Lava Lamp</string>
     <string name="saver_lava_desc">Warm blobs of wax rise, fall and melt into each other.</string>
     <string name="saver_fireflies">Fireflies</string>
     <string name="saver_fireflies_desc">Fireflies drift and blink over a summer meadow at night.</string>
     <string name="saver_starfield">Starfield</string>
-    <string name="saver_starfield_desc">Fly through space, with the occasional jump to warp speed.</string>
     <string name="saver_orbits">Orbits</string>
     <string name="saver_orbits_desc">A miniature solar system with planets circling the sun.</string>
     <string name="saver_constellation">Constellation</string>
@@ -496,4 +493,47 @@
     <string name="watcher_text">Beddery will appear when you charge your phone</string>
     <string name="launch_text">Showing your screensaver</string>
     <string name="double_tap_hint">Double-tap to close</string>
+    <!-- Round 3 screensavers -->
+    <string name="saver_sunrise">Sunrise Alarm</string>
+    <string name="saver_sunrise_desc">A dawn that rises over the 30 minutes before your alarm, lifting night mode and brightening the screen as the sky warms.</string>
+    <string name="sunrise_no_alarm">No alarm set</string>
+    <string name="sunrise_how">Set an alarm in your clock app and this screen will slowly brighten like dawn for half an hour before it rings.</string>
+    <string name="sunrise_scheduled">Dawn begins at %1$s · alarm at %2$s</string>
+    <string name="sunrise_rising">Sun rising · alarm at %s</string>
+    <string name="sunrise_morning">Good morning</string>
+
+    <string name="saver_window">Weather Window</string>
+    <string name="saver_window_desc">The view out of a bedroom window, drawn as the forecast says it\'ll be when you get up: rain on the glass, snow on the roofs or a clear dawn.</string>
+    <string name="window_when">When you wake · %s</string>
+    <string name="window_range">High %1$d° · Low %2$d°</string>
+    <string name="window_sample">Sample forecast</string>
+
+    <string name="saver_skytonight">Sky Tonight</string>
+    <string name="saver_skytonight_desc">The real sky above you: bright stars, constellations, the planets and the Moon, slowly turning to look all the way round.</string>
+    <string name="sky_tonight_at">The sky tonight at %s</string>
+    <string name="sky_now">Above you now</string>
+    <string name="sky_visible">Up now: %s</string>
+    <string name="sky_estimated">Estimated location · set one in Weather for accuracy</string>
+
+    <string name="saver_lighthouse">Lighthouse</string>
+    <string name="saver_lighthouse_desc">A lighthouse on a headland, its beam sweeping slowly across a dark sea at a calm breathing pace.</string>
+
+    <string name="saver_train">Sleeper Train</string>
+    <string name="saver_train_desc">The view from a night train: moonlit hills, sleeping villages and the odd station drifting past the window.</string>
+
+    <string name="saver_cat">Sleeping Cat</string>
+    <string name="saver_cat_desc">A cat curled up asleep on a blanket, breathing slowly. Tap and an ear might twitch.</string>
+
+    <string name="saver_aquarium">Aquarium</string>
+    <string name="saver_aquarium_desc">A small planted tank of tropical fish. Late at night the light turns moonlit blue and the fish settle down to rest.</string>
+
+    <string name="saver_hourglass">Hourglass</string>
+    <string name="saver_hourglass_desc">Sand that drains through an hourglass over each hour, piling up below, then turns over on the hour.</string>
+    <string name="hourglass_left">%d min left this hour</string>
+
+    <string name="saver_tinyroom">Tiny Room</string>
+    <string name="saver_tinyroom_desc">A little pixel-art bedroom whose window, lamps and wall clock follow the real time of day.</string>
+
+    <string name="saver_blocks">Block Clock</string>
+    <string name="saver_blocks_desc">Falling blocks that stack themselves into the time, then clear away and rebuild each minute.</string>
 </resources>

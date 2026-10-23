@@ -35,6 +35,7 @@ import dev.pridgey.beddery.data.SettingsRepository
 import dev.pridgey.beddery.savers.LocalSaverInput
 import dev.pridgey.beddery.savers.SaverHost
 import dev.pridgey.beddery.savers.SaverInput
+import dev.pridgey.beddery.savers.WakeLight
 import dev.pridgey.beddery.savers.rememberSaverContext
 import kotlinx.coroutines.delay
 
@@ -126,7 +127,18 @@ fun HintPill(visible: Boolean, @StringRes text: Int, modifier: Modifier = Modifi
 
 @Composable
 fun WindowBrightness(window: Window?, settings: AppSettings, night: Boolean) {
+    // A wake-up dawn brightens the screen through night mode, in gentle steps.
+    val wake by WakeLight.level.collectAsStateWithLifecycle()
+    val wakeStep = (wake * 20).toInt() / 20f
     val target = when {
+        wakeStep > 0f -> {
+            val base = when {
+                night -> 0.01f
+                settings.brightness != null -> settings.brightness.coerceIn(0.01f, 1f)
+                else -> 0.05f
+            }
+            (base + (0.85f - base).coerceAtLeast(0f) * wakeStep).coerceIn(0.01f, 1f)
+        }
         night -> 0.01f
         settings.brightness != null -> settings.brightness.coerceIn(0.01f, 1f)
         else -> WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE

@@ -27,6 +27,7 @@ import dev.pridgey.beddery.data.AppSettings
 import dev.pridgey.beddery.data.NotificationsMode
 import dev.pridgey.beddery.data.SettingsRepository
 import dev.pridgey.beddery.data.ShuffleMode
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 
 private val NightTint = Color(0xFFFF4A26)
@@ -49,8 +50,11 @@ fun SaverHost(
 ) {
     val saver = if (saverOverride != null) Savers.find(saverOverride) else rememberActiveSaver(settings, session)
     val night = !preview && settings.isNight(context.now.toLocalTime())
-    val dim by animateFloatAsState(if (night) settings.nightDim.coerceIn(0f, 0.9f) else 0f, tween(3000), label = "dim")
-    val redTint by animateFloatAsState(if (night && settings.nightRedTint) 1f else 0f, tween(3000), label = "tint")
+    // A wake-up dawn lifts night mode as it comes up.
+    val wake by WakeLight.level.collectAsStateWithLifecycle()
+    val lift = if (preview) 0f else wake
+    val dim by animateFloatAsState(if (night) settings.nightDim.coerceIn(0f, 0.9f) * (1f - lift) else 0f, tween(3000), label = "dim")
+    val redTint by animateFloatAsState(if (night && settings.nightRedTint) 1f - lift else 0f, tween(3000), label = "tint")
     val notificationMode = when {
         preview -> NotificationsMode.OFF
         night && !settings.notificationsAtNight -> NotificationsMode.OFF

@@ -5,7 +5,7 @@ phone is charging and locked: a clock, the weather, your agenda, or something ca
 
 ## Screensavers
 
-58 screensavers in four groups. Every one works in portrait and landscape, and the gallery shows live previews.
+68 screensavers in four groups. Every one works in portrait and landscape, and the gallery shows live previews.
 
 | Clocks | Info | Relax | Ambient |
 | --- | --- | --- | --- |
@@ -16,15 +16,17 @@ phone is charging and locked: a clock, the weather, your agenda, or something ca
 | Nixie | Power Cells | Count Down | The Orb |
 | Odometer | Charging | Moonlit Ocean | Jellyfish |
 | Big Type | Weather | Aurora | Color Field |
-| Rings | Agenda (calendar) | Lava Lamp | Contours |
-| Day Arc (sun path) | Notifications | Fireflies | Ridgelines |
-| Word Clock | Sleep | Rain on Glass | Flow Field |
-| Nightlight (dim red) | Sleep Coach | Campfire | Harmonograph |
-| Binary | Moon Phase | Candle | Pendulum Wave |
-| Bouncing Clock | Month | Snowfall | Digital Rain |
-| | Progress | Koi Pond | Game of Life |
-| | World Clock | | |
-| | Photo Frame | | |
+| Rings | Weather Window | Lava Lamp | Contours |
+| Day Arc (sun path) | Agenda (calendar) | Fireflies | Ridgelines |
+| Sunrise Alarm (dawn before your alarm) | Notifications | Rain on Glass | Flow Field |
+| Hourglass | Sleep | Campfire | Harmonograph |
+| Word Clock | Sleep Coach | Candle | Pendulum Wave |
+| Nightlight (dim red) | Moon Phase | Snowfall | Digital Rain |
+| Binary | Sky Tonight (real stars and planets) | Koi Pond | Game of Life |
+| Bouncing Clock | Month | Lighthouse |  |
+| Block Clock | Progress | Sleeper Train |  |
+| Tiny Room (pixel art) | World Clock | Sleeping Cat |  |
+|  | Photo Frame | Aquarium |  |
 
 Breathe also comes in a **Refined** version; swipe between the two in full-screen preview to compare.
 
