@@ -12,6 +12,21 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.automirrored.rounded.HelpOutline
+import androidx.compose.material.icons.rounded.Bedtime
+import androidx.compose.material.icons.rounded.Power
+import androidx.compose.material3.Button
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.runtime.saveable.rememberSaveable
+import dev.pridgey.beddery.data.NotificationsMode
+import dev.pridgey.beddery.data.ShuffleMode
+import dev.pridgey.beddery.notifications.NotificationStore
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -82,6 +97,7 @@ fun SettingsTab(settings: AppSettings, viewModel: MainViewModel, padding: Paddin
     LazyColumn(contentPadding = padding + PaddingValues(bottom = 24.dp)) {
         item { LaunchSection(settings, viewModel) }
         item { DisplaySection(settings, viewModel) }
+        item { NotificationsSection(settings, viewModel) }
         item { NightSection(settings, viewModel) }
         item { ShuffleSection(settings, viewModel) }
         item { AboutSection() }
@@ -105,6 +121,7 @@ private fun LaunchSection(settings: AppSettings, viewModel: MainViewModel) {
     val context = LocalContext.current
     var dream by remember { mutableStateOf(LaunchStatus.dream(context)) }
     var standby by remember { mutableStateOf(LaunchStatus.standby(context)) }
+    var comparing by rememberSaveable { mutableStateOf(false) }
     LifecycleResumeEffect(Unit) {
         dream = LaunchStatus.dream(context)
         standby = LaunchStatus.standby(context)
@@ -113,8 +130,25 @@ private fun LaunchSection(settings: AppSettings, viewModel: MainViewModel) {
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         standby = LaunchStatus.standby(context)
     }
+    // Android's own screensaver is the better default wherever the phone still has it.
+    val recommendDream = dream.available
+    val openDreamSettings = {
+        viewModel.update { it.copy(onboardingDone = true) }
+        context.tryStart(LaunchStatus.dreamSettingsIntent())
+    }
 
     SectionHeader(stringResource(R.string.section_launch))
+    Column(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 8.dp)) {
+        Text(
+            stringResource(R.string.launch_intro), style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        TextButton(onClick = { comparing = true }, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp)) {
+            Icon(Icons.AutoMirrored.Rounded.HelpOutline, null, Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(stringResource(R.string.launch_compare))
+        }
+    }
     SettingsGroup {
         // Android's own screensaver
         val dreamText = when {
@@ -125,7 +159,7 @@ private fun LaunchSection(settings: AppSettings, viewModel: MainViewModel) {
         }
         ListItem(
             colors = itemColors,
-            headlineContent = { Text(stringResource(R.string.dream_title)) },
+            headlineContent = { TitleWithPill(stringResource(R.string.dream_title), recommendDream) },
             supportingContent = { Text(dreamText) },
             leadingContent = {
                 StatusIcon(
@@ -137,12 +171,7 @@ private fun LaunchSection(settings: AppSettings, viewModel: MainViewModel) {
                 )
             },
             trailingContent = if (dream.available) {
-                {
-                    TextButton(onClick = {
-                        viewModel.update { it.copy(onboardingDone = true) }
-                        context.tryStart(LaunchStatus.dreamSettingsIntent())
-                    }) { Text(stringResource(R.string.action_open)) }
-                }
+                { TextButton(onClick = { openDreamSettings() }) { Text(stringResource(R.string.action_open)) } }
             } else null,
         )
         HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
@@ -151,9 +180,9 @@ private fun LaunchSection(settings: AppSettings, viewModel: MainViewModel) {
         ListItem(
             colors = itemColors,
             modifier = Modifier.clickable(role = Role.Switch) { toggleStandby(!settings.standbyEnabled, standby, viewModel, notificationPermission::launch) },
-            headlineContent = { Text(stringResource(R.string.standby_title)) },
+            headlineContent = { TitleWithPill(stringResource(R.string.standby_title), !recommendDream) },
             supportingContent = {
-                Text(stringResource(if (dream.available) R.string.standby_desc else R.string.standby_desc_recommended))
+                Text(stringResource(R.string.standby_desc))
             },
             leadingContent = { StatusIcon(if (settings.standbyEnabled && standby.ready) StatusKind.Good else if (settings.standbyEnabled) StatusKind.Warning else StatusKind.Off) },
             trailingContent = {
@@ -185,9 +214,6 @@ private fun LaunchSection(settings: AppSettings, viewModel: MainViewModel) {
                 SwitchRow(stringResource(R.string.standby_on_lock), settings.standbyOnScreenOff, stringResource(R.string.standby_on_lock_desc)) { v ->
                     viewModel.update { it.copy(standbyOnScreenOff = v) }
                 }
-                SwitchRow(stringResource(R.string.standby_double_tap), settings.doubleTapToExit, stringResource(R.string.standby_double_tap_desc)) { v ->
-                    viewModel.update { it.copy(doubleTapToExit = v) }
-                }
                 ListItem(
                     colors = itemColors,
                     headlineContent = { Text(stringResource(R.string.standby_orientation)) },
@@ -208,16 +234,120 @@ private fun LaunchSection(settings: AppSettings, viewModel: MainViewModel) {
                         ) { v -> viewModel.update { it.copy(standbyOrientation = v) } }
                     },
                 )
-                if (dream.available) {
-                    Text(
-                        stringResource(R.string.standby_both_note),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                    )
+            }
+        }
+        if (dream.selected == true && settings.standbyEnabled) {
+            FixRow(stringResource(R.string.launch_both_on), stringResource(R.string.launch_compare), optional = true) { comparing = true }
+        }
+        HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        SwitchRow(stringResource(R.string.standby_double_tap), settings.doubleTapToExit, stringResource(R.string.standby_double_tap_desc)) { v ->
+            viewModel.update { it.copy(doubleTapToExit = v) }
+        }
+    }
+
+    if (comparing) {
+        CompareSheet(
+            dreamAvailable = dream.available,
+            onDismiss = { comparing = false },
+            onSetupDream = {
+                comparing = false
+                openDreamSettings()
+            },
+            onSetupStandby = {
+                comparing = false
+                if (!settings.standbyEnabled) toggleStandby(true, standby, viewModel, notificationPermission::launch)
+            },
+        )
+    }
+}
+
+@Composable
+private fun TitleWithPill(title: String, recommended: Boolean) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(title)
+        if (recommended) {
+            Spacer(Modifier.width(8.dp))
+            Text(
+                stringResource(R.string.badge_recommended),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50))
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .padding(horizontal = 8.dp, vertical = 2.dp),
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CompareSheet(dreamAvailable: Boolean, onDismiss: () -> Unit, onSetupDream: () -> Unit, onSetupStandby: () -> Unit) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            Modifier
+                .verticalScroll(rememberScrollState())
+                .padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
+        ) {
+            Text(stringResource(R.string.compare_title), style = MaterialTheme.typography.headlineSmall)
+            Spacer(Modifier.height(6.dp))
+            Text(stringResource(R.string.compare_subtitle), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(24.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                CompareHeading(Icons.Rounded.Bedtime, stringResource(R.string.dream_title), Modifier.weight(1f))
+                CompareHeading(Icons.Rounded.Power, stringResource(R.string.standby_short), Modifier.weight(1f))
+            }
+            listOf(
+                Triple(R.string.compare_row_starts, R.string.compare_dream_starts, R.string.compare_standby_starts),
+                Triple(R.string.compare_row_setup, R.string.compare_dream_setup, R.string.compare_standby_setup),
+                Triple(R.string.compare_row_works, R.string.compare_dream_works, R.string.compare_standby_works),
+                Triple(R.string.compare_row_background, R.string.compare_dream_background, R.string.compare_standby_background),
+            ).forEach { (label, a, b) ->
+                HorizontalDivider(Modifier.padding(vertical = 14.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                Text(stringResource(label), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.height(6.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Text(stringResource(a), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    Text(stringResource(b), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                }
+            }
+            Spacer(Modifier.height(24.dp))
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .padding(20.dp),
+            ) {
+                Text(stringResource(R.string.compare_pick), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    stringResource(if (dreamAvailable) R.string.compare_pick_dream else R.string.compare_pick_standby),
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+                Spacer(Modifier.height(16.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (dreamAvailable) {
+                        Button(onClick = onSetupDream) { Text(stringResource(R.string.compare_setup_dream)) }
+                        OutlinedButton(onClick = onSetupStandby) { Text(stringResource(R.string.compare_setup_standby)) }
+                    } else {
+                        Button(onClick = onSetupStandby) { Text(stringResource(R.string.compare_setup_standby)) }
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun CompareHeading(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, modifier: Modifier) {
+    Column(modifier) {
+        Box(
+            Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer),
+            contentAlignment = Alignment.Center,
+        ) { Icon(icon, null, tint = MaterialTheme.colorScheme.onSecondaryContainer) }
+        Spacer(Modifier.height(8.dp))
+        Text(title, style = MaterialTheme.typography.titleSmall)
     }
 }
 
@@ -436,8 +566,84 @@ private fun NightSection(settings: AppSettings, viewModel: MainViewModel) {
     }
 }
 
+// ---------------------------------------------------------------- Notifications
+
+@Composable
+private fun NotificationsSection(settings: AppSettings, viewModel: MainViewModel) {
+    SectionHeader(stringResource(R.string.section_notifications))
+    SettingsGroup { NotificationSettings(settings, viewModel) }
+}
+
+/** Notification access and display options. Also shown on the Notifications screensaver's page. */
+@Composable
+fun NotificationSettings(settings: AppSettings, viewModel: MainViewModel) {
+    val context = LocalContext.current
+    var access by remember { mutableStateOf(NotificationStore.hasAccess(context)) }
+    LifecycleResumeEffect(Unit) {
+        access = NotificationStore.hasAccess(context)
+        onPauseOrDispose { }
+    }
+    ListItem(
+        colors = itemColors,
+        headlineContent = { Text(stringResource(R.string.notif_access)) },
+        supportingContent = { Text(stringResource(if (access) R.string.notif_access_granted else R.string.notif_access_desc)) },
+        leadingContent = { StatusIcon(if (access) StatusKind.Good else StatusKind.Info) },
+        trailingContent = if (access) null else {
+            { TextButton(onClick = { context.tryStart(NotificationStore.settingsIntent(context)) }) { Text(stringResource(R.string.action_allow)) } }
+        },
+    )
+    AnimatedVisibility(access) {
+        Column {
+            ListItem(
+                colors = itemColors,
+                headlineContent = { Text(stringResource(R.string.notif_show)) },
+                supportingContent = {
+                    Column {
+                        Choice(
+                            NotificationsMode.entries, settings.notificationsMode,
+                            label = {
+                                stringResource(
+                                    when (it) {
+                                        NotificationsMode.OFF -> R.string.notif_off
+                                        NotificationsMode.ICONS -> R.string.notif_icons
+                                        NotificationsMode.PREVIEWS -> R.string.notif_previews
+                                    },
+                                )
+                            },
+                            modifier = Modifier.padding(top = 8.dp),
+                        ) { v -> viewModel.update { it.copy(notificationsMode = v) } }
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            stringResource(
+                                when (settings.notificationsMode) {
+                                    NotificationsMode.OFF -> R.string.notif_off_desc
+                                    NotificationsMode.ICONS -> R.string.notif_icons_desc
+                                    NotificationsMode.PREVIEWS -> R.string.notif_previews_desc
+                                },
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                },
+            )
+            if (settings.notificationsMode != NotificationsMode.OFF) {
+                SwitchRow(stringResource(R.string.notif_night), settings.notificationsAtNight, stringResource(R.string.notif_night_desc)) { v ->
+                    viewModel.update { it.copy(notificationsAtNight = v) }
+                }
+            }
+            Text(
+                stringResource(R.string.notif_footnote),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+            )
+        }
+    }
+}
+
 // ---------------------------------------------------------------- Shuffle
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ShuffleSection(settings: AppSettings, viewModel: MainViewModel) {
     SectionHeader(stringResource(R.string.section_shuffle))
@@ -448,13 +654,18 @@ private fun ShuffleSection(settings: AppSettings, viewModel: MainViewModel) {
         AnimatedVisibility(settings.shuffleEnabled) {
             ListItem(
                 colors = itemColors,
-                headlineContent = { Text(stringResource(R.string.shuffle_every)) },
+                headlineContent = { Text(stringResource(R.string.shuffle_when)) },
                 supportingContent = {
-                    Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FlowRow(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            selected = settings.shuffleMode == ShuffleMode.ON_START,
+                            onClick = { viewModel.update { it.copy(shuffleMode = ShuffleMode.ON_START) } },
+                            label = { Text(stringResource(R.string.shuffle_each_start)) },
+                        )
                         listOf(5, 10, 15, 30, 60).forEach { m ->
                             FilterChip(
-                                selected = settings.shuffleMinutes == m,
-                                onClick = { viewModel.update { it.copy(shuffleMinutes = m) } },
+                                selected = settings.shuffleMode == ShuffleMode.TIMED && settings.shuffleMinutes == m,
+                                onClick = { viewModel.update { it.copy(shuffleMode = ShuffleMode.TIMED, shuffleMinutes = m) } },
                                 label = { Text(stringResource(R.string.minutes_short, m)) },
                             )
                         }

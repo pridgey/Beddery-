@@ -40,6 +40,12 @@ class SettingsRepository private constructor(context: Context) {
         val shuffle = booleanPreferencesKey("shuffle")
         val shuffleIds = stringSetPreferencesKey("shuffle_ids")
         val shuffleMinutes = intPreferencesKey("shuffle_minutes")
+        val shuffleMode = stringPreferencesKey("shuffle_mode")
+        val shuffleDeck = stringPreferencesKey("shuffle_deck")
+        val lastShuffle = stringPreferencesKey("last_shuffle")
+        val notifications = stringPreferencesKey("notifications_mode")
+        val notificationsNight = booleanPreferencesKey("notifications_night")
+        val previewHint = booleanPreferencesKey("preview_hint")
         val clockFormat = stringPreferencesKey("clock_format")
         val accent = stringPreferencesKey("accent")
         val brightness = floatPreferencesKey("brightness")
@@ -75,6 +81,12 @@ class SettingsRepository private constructor(context: Context) {
             shuffleEnabled = p[Keys.shuffle] ?: d.shuffleEnabled,
             shuffleIds = p[Keys.shuffleIds] ?: d.shuffleIds,
             shuffleMinutes = p[Keys.shuffleMinutes] ?: d.shuffleMinutes,
+            shuffleMode = p[Keys.shuffleMode].toEnum(d.shuffleMode),
+            shuffleDeck = p[Keys.shuffleDeck]?.split(',')?.filter { it.isNotBlank() } ?: d.shuffleDeck,
+            lastShuffleId = p[Keys.lastShuffle]?.takeIf { it.isNotBlank() },
+            notificationsMode = p[Keys.notifications].toEnum(d.notificationsMode),
+            notificationsAtNight = p[Keys.notificationsNight] ?: d.notificationsAtNight,
+            previewHintSeen = p[Keys.previewHint] ?: d.previewHintSeen,
             clockFormat = p[Keys.clockFormat].toEnum(d.clockFormat),
             accent = p[Keys.accent].toEnum(d.accent),
             brightness = p[Keys.brightness]?.takeIf { it >= 0f },
@@ -104,6 +116,12 @@ class SettingsRepository private constructor(context: Context) {
         p[Keys.shuffle] = s.shuffleEnabled
         p[Keys.shuffleIds] = s.shuffleIds
         p[Keys.shuffleMinutes] = s.shuffleMinutes
+        p[Keys.shuffleMode] = s.shuffleMode.name
+        p[Keys.shuffleDeck] = s.shuffleDeck.joinToString(",")
+        p[Keys.lastShuffle] = s.lastShuffleId.orEmpty()
+        p[Keys.notifications] = s.notificationsMode.name
+        p[Keys.notificationsNight] = s.notificationsAtNight
+        p[Keys.previewHint] = s.previewHintSeen
         p[Keys.clockFormat] = s.clockFormat.name
         p[Keys.accent] = s.accent.name
         p[Keys.brightness] = s.brightness ?: -1f

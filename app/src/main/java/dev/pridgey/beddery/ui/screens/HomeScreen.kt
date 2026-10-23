@@ -26,6 +26,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.AutoAwesomeMosaic
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
@@ -66,6 +67,7 @@ import androidx.compose.ui.unit.dp
 import dev.pridgey.beddery.MainViewModel
 import dev.pridgey.beddery.R
 import dev.pridgey.beddery.data.AppSettings
+import dev.pridgey.beddery.data.ShuffleMode
 import dev.pridgey.beddery.savers.Saver
 import dev.pridgey.beddery.savers.SaverCategory
 import dev.pridgey.beddery.savers.SaverContext
@@ -126,8 +128,9 @@ private fun GalleryTab(
     onSetup: () -> Unit,
 ) {
     var filter by rememberSaveable { mutableStateOf<SaverCategory?>(null) }
+    var refinedOnly by rememberSaveable { mutableStateOf(false) }
     val previewContext = rememberSaverContext(settings, preview = true)
-    val savers = Savers.all.filter { filter == null || it.category == filter }
+    val savers = Savers.all.filter { (filter == null || it.category == filter) && (!refinedOnly || it.refined) }
     LazyVerticalGrid(
         columns = GridCells.Adaptive(152.dp),
         modifier = Modifier.fillMaxSize(),
@@ -143,10 +146,24 @@ private fun GalleryTab(
         item(span = { GridItemSpan(maxLineSpan) }, key = "now") { NowShowing(settings) }
         item(span = { GridItemSpan(maxLineSpan) }, key = "filters") {
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(selected = filter == null, onClick = { filter = null }, label = { Text(stringResource(R.string.category_all)) })
+                FilterChip(
+                    selected = filter == null && !refinedOnly,
+                    onClick = { filter = null; refinedOnly = false },
+                    label = { Text(stringResource(R.string.category_all)) },
+                )
                 SaverCategory.entries.forEach { c ->
-                    FilterChip(selected = filter == c, onClick = { filter = if (filter == c) null else c }, label = { Text(stringResource(c.label)) })
+                    FilterChip(
+                        selected = filter == c,
+                        onClick = { filter = if (filter == c) null else c },
+                        label = { Text(stringResource(c.label)) },
+                    )
                 }
+                FilterChip(
+                    selected = refinedOnly,
+                    onClick = { refinedOnly = !refinedOnly },
+                    leadingIcon = { Icon(Icons.Rounded.AutoAwesome, null, Modifier.size(18.dp)) },
+                    label = { Text(stringResource(R.string.category_refined)) },
+                )
             }
         }
         items(savers, key = { it.id }) { saver ->
@@ -185,9 +202,10 @@ private fun SetupCard(onSetup: () -> Unit, onDismiss: () -> Unit) {
 private fun NowShowing(settings: AppSettings) {
     val label = if (settings.shuffleEnabled) {
         val count = settings.shuffleIds.count { Savers.findOrNull(it) != null }.takeIf { it > 0 } ?: Savers.all.size
-        pluralStringResource(R.plurals.now_shuffling, count, count, settings.shuffleMinutes)
+        if (settings.shuffleMode == ShuffleMode.ON_START) pluralStringResource(R.plurals.now_shuffling_start, count, count)
+        else pluralStringResource(R.plurals.now_shuffling, count, count, settings.shuffleMinutes)
     } else {
-        stringResource(R.string.now_showing, stringResource(Savers.find(settings.selectedSaverId).title))
+        stringResource(R.string.now_showing, saverName(Savers.find(settings.selectedSaverId)))
     }
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(
@@ -216,6 +234,7 @@ private fun SaverCard(saver: Saver, settings: AppSettings, context: SaverContext
     ) {
         Box {
             SaverPreview(saver, settings, context, Modifier.fillMaxWidth().padding(8.dp))
+            if (saver.refined) RefinedBadge(Modifier.align(Alignment.TopStart).padding(16.dp), onDark = true)
             if (active) {
                 Box(
                     Modifier
@@ -242,4 +261,11 @@ private fun SaverCard(saver: Saver, settings: AppSettings, context: SaverContext
             }
         }
     }
+}
+
+/** "Aurora", or "Aurora (Refined)" for the polished version, so the two are never confused. */
+@Composable
+fun saverName(saver: Saver): String {
+    val title = stringResource(saver.title)
+    return if (saver.refined) stringResource(R.string.saver_refined_name, title) else title
 }

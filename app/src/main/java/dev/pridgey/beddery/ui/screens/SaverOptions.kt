@@ -71,7 +71,8 @@ fun SaverOptions(saverId: String, settings: AppSettings, viewModel: MainViewMode
     Column(Modifier.fillMaxWidth()) {
         when (saverId) {
             "weather" -> WeatherOptions(settings, viewModel)
-            "agenda" -> CalendarOptions()
+            "agenda", "month" -> CalendarOptions()
+            "notifications" -> NotificationSettings(settings, viewModel)
             "photos" -> PhotoOptions(settings, viewModel)
             "world" -> WorldClockOptions(settings, viewModel)
             "breathe" -> BreatheOptions(settings, viewModel)

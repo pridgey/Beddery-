@@ -21,15 +21,22 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import dev.pridgey.beddery.data.AppSettings
+import dev.pridgey.beddery.data.NotificationsMode
+import dev.pridgey.beddery.data.SettingsRepository
+import dev.pridgey.beddery.data.ShuffleMode
 import kotlinx.coroutines.delay
 
 private val NightTint = Color(0xFFFF4A26)
 
 /**
  * Draws the active screensaver plus the shared extras: shuffle, small clock overlay,
- * burn-in protection and night mode. Used by the dream, standby mode and previews.
+ * notifications, burn-in protection and night mode. Used by the dream, standby mode and previews.
+ *
+ * [session] is true for a real screensaver session (not a preview): only sessions advance
+ * the "new screensaver each time" shuffle.
  */
 @Composable
 fun SaverHost(
@@ -37,12 +44,18 @@ fun SaverHost(
     modifier: Modifier = Modifier,
     saverOverride: String? = null,
     preview: Boolean = false,
+    session: Boolean = false,
     context: SaverContext = rememberSaverContext(settings, preview),
 ) {
-    val saver = if (saverOverride != null) Savers.find(saverOverride) else rememberActiveSaver(settings)
+    val saver = if (saverOverride != null) Savers.find(saverOverride) else rememberActiveSaver(settings, session)
     val night = !preview && settings.isNight(context.now.toLocalTime())
     val dim by animateFloatAsState(if (night) settings.nightDim.coerceIn(0f, 0.9f) else 0f, tween(3000), label = "dim")
     val redTint by animateFloatAsState(if (night && settings.nightRedTint) 1f else 0f, tween(3000), label = "tint")
+    val notificationMode = when {
+        preview -> NotificationsMode.OFF
+        night && !settings.notificationsAtNight -> NotificationsMode.OFF
+        else -> settings.notificationsMode
+    }
 
     Box(
         modifier
@@ -74,6 +87,15 @@ fun SaverHost(
                             .align(Alignment.BottomCenter)
                             .padding(bottom = 40.dp)
                             .then(shift),
+                        notifications = notificationMode,
+                    )
+                } else if (s.showsNotifications) {
+                    NotificationBar(
+                        notificationMode,
+                        Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = 36.dp, start = 24.dp, end = 24.dp)
+                            .then(shift),
                     )
                 }
             }
@@ -81,23 +103,43 @@ fun SaverHost(
     }
 }
 
-/** The selected saver, or a rotating pick when shuffle is on. */
+/** The selected saver, or a shuffled pick when shuffle is on. */
 @Composable
-fun rememberActiveSaver(settings: AppSettings): Saver {
+fun rememberActiveSaver(settings: AppSettings, session: Boolean = false): Saver {
     val pool = remember(settings.shuffleEnabled, settings.shuffleIds, settings.selectedSaverId) {
         if (settings.shuffleEnabled) {
-            Savers.all.filter { it.id in settings.shuffleIds }.ifEmpty { Savers.all }.shuffled()
+            Savers.all.filter { it.id in settings.shuffleIds }.ifEmpty { Savers.all }
         } else {
             listOf(Savers.find(settings.selectedSaverId))
         }
     }
-    var index by remember(pool) { mutableIntStateOf(0) }
-    LaunchedEffect(pool, settings.shuffleMinutes) {
-        if (pool.size < 2) return@LaunchedEffect
+    if (settings.shuffleEnabled && settings.shuffleMode == ShuffleMode.ON_START) {
+        return rememberSessionPick(pool, settings, session)
+    }
+    val order = remember(pool) { pool.shuffled() }
+    var index by remember(order) { mutableIntStateOf(0) }
+    LaunchedEffect(order, settings.shuffleMinutes) {
+        if (order.size < 2) return@LaunchedEffect
         while (true) {
             delay(settings.shuffleMinutes.coerceAtLeast(1) * 60_000L)
-            index = (index + 1) % pool.size
+            index = (index + 1) % order.size
         }
     }
-    return pool[index.coerceIn(pool.indices)]
+    return order[index.coerceIn(order.indices)]
+}
+
+/** One screensaver for the whole session, drawn from the shuffle deck when it starts. */
+@Composable
+private fun rememberSessionPick(pool: List<Saver>, settings: AppSettings, session: Boolean): Saver {
+    val context = LocalContext.current
+    // Keyed on the pool only: saving the new deck below must not trigger another draw.
+    val draw = remember(pool) {
+        ShuffleDeck.draw(pool.map { it.id }, settings.shuffleDeck, settings.lastShuffleId)
+    }
+    if (session) {
+        LaunchedEffect(draw) {
+            SettingsRepository.get(context).update { it.copy(shuffleDeck = draw.remaining, lastShuffleId = draw.id) }
+        }
+    }
+    return Savers.find(draw.id)
 }

@@ -87,6 +87,13 @@ fun MinimalClockSaver(ctx: SaverContext) {
             Text(formatLongDate(ctx.now.toLocalDate()), fontSize = timeSize * 0.12f, color = ctx.accent, fontWeight = FontWeight.Light)
             Spacer(Modifier.height(18.dp))
             StatusLine(ctx, fontSize = timeSize * 0.075f)
+            // A small surprise for anyone awake at 11:11.
+            androidx.compose.animation.AnimatedVisibility(t.hour % 12 == 11 && t.minute == 11, enter = androidx.compose.animation.fadeIn(tween(2000)), exit = androidx.compose.animation.fadeOut(tween(2000))) {
+                Text(
+                    androidx.compose.ui.res.stringResource(dev.pridgey.beddery.R.string.easter_wish), fontSize = timeSize * 0.07f,
+                    color = ctx.accent.copy(alpha = 0.8f), fontWeight = FontWeight.Light, modifier = Modifier.padding(top = 14.dp),
+                )
+            }
         }
     }
 }
@@ -446,6 +453,8 @@ private class Bouncer {
     var flash = 0f
     var bounds = androidx.compose.ui.geometry.Size.Zero
     var block = androidx.compose.ui.geometry.Size.Zero
+    /** Confetti from a perfect corner hit: x, y, vx, vy, age, color index. */
+    val confetti = ArrayList<FloatArray>()
 }
 
 @Composable
@@ -472,8 +481,26 @@ fun BouncingClockSaver(ctx: SaverContext) {
         if (s.y <= 0f) { s.y = 0f; s.vy = 1f; hits++ }
         if (s.y + block.height >= bounds.height) { s.y = bounds.height - block.height; s.vy = -1f; hits++ }
         if (hits > 0) s.colorIndex = (s.colorIndex + 1) % BouncePalette.size
-        if (hits > 1) s.flash = 1f // a perfect corner hit!
+        if (hits > 1) {
+            s.flash = 1f // a perfect corner hit!
+            val cx = s.x + if (s.vx < 0) block.width else 0f
+            val cy = s.y + if (s.vy < 0) block.height else 0f
+            repeat(70) { k ->
+                val a = kotlin.random.Random.nextFloat() * 6.283f
+                val v = bounds.minDimension * (0.15f + kotlin.random.Random.nextFloat() * 0.5f)
+                s.confetti += floatArrayOf(cx, cy, kotlin.math.cos(a) * v, kotlin.math.sin(a) * v - bounds.minDimension * 0.3f, 0f, (k % BouncePalette.size).toFloat())
+            }
+        }
         s.flash = (s.flash - dt * 0.5f).coerceAtLeast(0f)
+        val it = s.confetti.iterator()
+        while (it.hasNext()) {
+            val p = it.next()
+            p[4] += dt
+            p[3] += bounds.minDimension * 0.6f * dt
+            p[0] += p[2] * dt
+            p[1] += p[3] * dt
+            if (p[4] > 3f) it.remove()
+        }
     }
     Canvas(Modifier.fillMaxSize()) {
         frame.value
@@ -484,6 +511,10 @@ fun BouncingClockSaver(ctx: SaverContext) {
         state.block = block
         val color = BouncePalette[state.colorIndex]
         if (state.flash > 0f) drawRect(color.copy(alpha = state.flash * 0.25f))
+        state.confetti.forEach { p ->
+            val a = (1f - p[4] / 3f).coerceIn(0f, 1f)
+            drawCircle(BouncePalette[p[5].toInt()].copy(alpha = a), size.minDimension * 0.006f, Offset(p[0], p[1]))
+        }
         val x = state.x.coerceAtLeast(0f)
         val y = state.y.coerceAtLeast(0f)
         drawText(main, color = color, topLeft = Offset(x + (block.width - main.size.width) / 2f, y))

@@ -5,38 +5,59 @@ phone is charging and locked: a clock, the weather, your agenda, or something ca
 
 ## Screensavers
 
+51 screensavers in four groups. Every one works in portrait and landscape, and the gallery shows live previews.
+
 | Clocks | Info | Relax | Ambient |
 | --- | --- | --- | --- |
-| Minimal | Charging | Breathe (guided) | Starfield |
-| Analog | Weather | Moonlit Ocean | Orbits |
-| Flip Clock | Agenda (calendar) | Aurora | Constellation |
-| Word Clock | World Clock | Lava Lamp | Digital Rain |
-| Nightlight (dim red) | Photo Frame | Fireflies | Game of Life |
+| Minimal | Charging | Breathe ✦ | Starfield ✦ |
+| Analog | Weather | Moonlit Ocean ✦ | Orbits ✦ |
+| Flip Clock | Agenda (calendar) | Aurora ✦ | Constellation ✦ |
+| Bedside Classic (red LED) | Notifications | Lava Lamp ✦ | Jellyfish |
+| Nixie | Sleep (time until alarm) | Fireflies ✦ | Color Field |
+| Odometer | Moon Phase | Rain on Glass | Flow Field |
+| Big Type | Month | Campfire | Harmonograph |
+| Rings | Progress (day, week, year) | Candle | Pendulum Wave |
+| Day Arc (sun and moon) | World Clock | Snowfall | Digital Rain |
+| Word Clock | Photo Frame | Koi Pond | Game of Life |
+| Nightlight (dim red) | | | |
 | Binary | | | |
 | Bouncing Clock | | | |
 
-Every screensaver works in portrait and landscape. The gallery shows live previews.
+✦ also comes in a **Refined** version: the same idea, drawn with far more detail (textured moon and
+clouds, lit 3D wax, shaded planets with rings, layered meadows with depth of field). Refined versions sit
+right after their originals, so you can swipe between the two in full-screen preview to compare.
 
 Shared features:
 
+- **Full-screen preview**: swipe left and right to browse every screensaver, then pick one or add it to
+  shuffle without leaving the preview.
+- **Notifications** (optional): clocks and info screens show icons for apps with new notifications, and a
+  banner when something arrives. Choose icons only or full previews, and whether they appear at night.
+  Silent, ongoing and lock-screen-private notifications are respected. Nothing leaves the phone.
 - **Night mode**: during your sleep hours, brightness drops to minimum, colors darken, and an optional
   red tint removes blue light.
 - **Burn-in protection**: static elements slowly drift so OLED screens stay healthy.
-- **Shuffle**: rotate through your favorites every 5–60 minutes.
+- **Shuffle**: a new screensaver each time Beddery starts (every one shows before any repeats), or rotate
+  every 5–60 minutes.
 - **Small clock overlay** on scenic screensavers, plus next alarm and charge time remaining.
 - Accent colors, 12/24-hour clock, brightness override.
+- A few small surprises. Try tapping things in preview, or with "Double-tap to close" turned on.
 
 ## How it starts
 
 Beddery offers two ways to appear while charging:
 
+Settings explains the difference with a side-by-side comparison and recommends one for your phone.
+
 1. **Android screensaver** (recommended where available). Beddery is a standard Android screensaver
    (a `DreamService`). Pick it in *Settings → Display → Screen saver* and set it to start while charging.
-   The app links straight there.
+   The app links straight there. Android decides when it starts (usually when the screen times out).
 2. **Standby mode** works on every phone, including ones whose maker removed the screensaver setting.
    A small foreground service watches for the charger and the screen locking, then shows Beddery over
    the lock screen through a full-screen notification. It never unlocks your phone; tap to close.
    Standby needs notification and full-screen-notification permission, and the app walks you through both.
+
+Either way, "Double-tap to close" stops a single bump from closing Beddery at night.
 
 ## Building
 

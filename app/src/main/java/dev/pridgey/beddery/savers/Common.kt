@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -43,6 +44,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.pridgey.beddery.R
+import dev.pridgey.beddery.data.NotificationsMode
 import dev.pridgey.beddery.system.PlugType
 import kotlinx.coroutines.delay
 import java.time.LocalDate
@@ -181,7 +183,7 @@ fun StatusLine(ctx: SaverContext, fontSize: TextUnit, color: Color = Color.White
 
 /** Compact clock shown on top of ambient screensavers. */
 @Composable
-fun ClockOverlay(ctx: SaverContext, modifier: Modifier = Modifier) {
+fun ClockOverlay(ctx: SaverContext, modifier: Modifier = Modifier, notifications: NotificationsMode = NotificationsMode.OFF) {
     val t = ctx.now.toLocalTime()
     Column(
         modifier.drawBehind {
@@ -206,5 +208,6 @@ fun ClockOverlay(ctx: SaverContext, modifier: Modifier = Modifier) {
         Text(formatLongDate(ctx.now.toLocalDate()), color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp)
         Spacer(Modifier.size(4.dp))
         StatusLine(ctx, fontSize = 12.sp, color = Color.White.copy(alpha = 0.45f))
+        NotificationBar(notifications, Modifier.padding(top = 12.dp), iconSize = 26.dp)
     }
 }

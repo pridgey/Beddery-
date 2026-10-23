@@ -17,6 +17,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.automirrored.rounded.CompareArrows
+import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material3.AssistChip
@@ -48,7 +51,7 @@ import dev.pridgey.beddery.standby.StandbyActivity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SaverDetailScreen(saverId: String, settings: AppSettings, viewModel: MainViewModel, onBack: () -> Unit) {
+fun SaverDetailScreen(saverId: String, settings: AppSettings, viewModel: MainViewModel, onBack: () -> Unit, onOpenSaver: (String) -> Unit = {}) {
     val saver = Savers.findOrNull(saverId)
     if (saver == null) {
         LaunchedEffect(Unit) { onBack() }
@@ -62,7 +65,7 @@ fun SaverDetailScreen(saverId: String, settings: AppSettings, viewModel: MainVie
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(saver.title)) },
+                title = { Text(saverName(saver)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.action_back)) }
                 },
@@ -85,14 +88,45 @@ fun SaverDetailScreen(saverId: String, settings: AppSettings, viewModel: MainVie
                     ) { Icon(Icons.Rounded.Fullscreen, stringResource(R.string.action_preview_full)) }
                 }
             }
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(8.dp))
+            Text(
+                stringResource(R.string.detail_preview_tip), style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(saver.icon, null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(saver.category.label), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                if (saver.refined) {
+                    Spacer(Modifier.width(10.dp))
+                    RefinedBadge()
+                }
+                if (saver.supportsNotifications) {
+                    Spacer(Modifier.width(14.dp))
+                    Icon(Icons.Rounded.Notifications, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text(stringResource(R.string.detail_shows_notifications), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
             Spacer(Modifier.height(8.dp))
             Text(stringResource(saver.description), style = MaterialTheme.typography.bodyLarge)
+            val counterpart = Savers.counterpart(saver.id)
+            if (counterpart != null) {
+                if (saver.refined) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        stringResource(R.string.detail_refined_note, stringResource(counterpart.title)),
+                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                AssistChip(
+                    onClick = { onOpenSaver(counterpart.id) },
+                    leadingIcon = { Icon(Icons.AutoMirrored.Rounded.CompareArrows, null, Modifier.size(18.dp)) },
+                    label = { Text(stringResource(if (saver.refined) R.string.detail_compare_original else R.string.detail_compare_refined)) },
+                )
+            }
             Spacer(Modifier.height(20.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {

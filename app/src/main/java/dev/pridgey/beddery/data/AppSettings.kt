@@ -9,6 +9,12 @@ enum class TempUnit { CELSIUS, FAHRENHEIT }
 
 enum class StandbyOrientation { AUTO, PORTRAIT, LANDSCAPE }
 
+/** When shuffle picks a new screensaver: on a timer, or once each time Beddery starts. */
+enum class ShuffleMode { TIMED, ON_START }
+
+/** How much of a notification the screensavers may show. */
+enum class NotificationsMode { OFF, ICONS, PREVIEWS }
+
 /** Seconds for each phase of a breathing cycle: in, hold, out, hold. */
 enum class BreathPattern(val inhale: Int, val holdIn: Int, val exhale: Int, val holdOut: Int) {
     BOX(4, 4, 4, 4),
@@ -33,6 +39,10 @@ data class AppSettings(
     val shuffleEnabled: Boolean = false,
     val shuffleIds: Set<String> = emptySet(),
     val shuffleMinutes: Int = 15,
+    val shuffleMode: ShuffleMode = ShuffleMode.TIMED,
+    /** Screensavers still to come before the shuffle repeats (ON_START mode). */
+    val shuffleDeck: List<String> = emptyList(),
+    val lastShuffleId: String? = null,
 
     // Display
     val clockFormat: ClockFormat = ClockFormat.SYSTEM,
@@ -41,6 +51,10 @@ data class AppSettings(
     val brightness: Float? = null,
     val showClockOverlay: Boolean = true,
     val burnInProtection: Boolean = true,
+
+    // Notifications (needs notification access)
+    val notificationsMode: NotificationsMode = NotificationsMode.ICONS,
+    val notificationsAtNight: Boolean = false,
 
     // Night mode
     val nightModeEnabled: Boolean = true,
@@ -56,6 +70,8 @@ data class AppSettings(
     val standbyOnScreenOff: Boolean = true,
     val doubleTapToExit: Boolean = false,
     val standbyOrientation: StandbyOrientation = StandbyOrientation.AUTO,
+    /** Seen the swipe hint in full-screen preview. */
+    val previewHintSeen: Boolean = false,
 
     // Per-screensaver options
     val tempUnit: TempUnit = defaultTempUnit(),

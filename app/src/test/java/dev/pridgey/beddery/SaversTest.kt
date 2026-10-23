@@ -2,6 +2,7 @@ package dev.pridgey.beddery
 
 import dev.pridgey.beddery.savers.Savers
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -10,5 +11,22 @@ class SaversTest {
 
     @Test fun unknownIdFallsBackToDefault() = assertEquals("minimal", Savers.find("nope").id)
 
-    @Test fun hasPlentyOfVariety() = assertTrue(Savers.all.size >= 20)
+    @Test fun hasPlentyOfVariety() = assertTrue(Savers.all.size >= 50)
+
+    @Test fun refinedVersionsPointAtRealOriginals() {
+        val refined = Savers.all.filter { it.refined }
+        assertEquals(8, refined.size)
+        refined.forEach { r ->
+            val original = assertNotNull(Savers.findOrNull(r.variantOf)).let { Savers.find(r.variantOf) }
+            assertEquals(original.category, r.category)
+            assertEquals(original.id, Savers.counterpart(r.id)?.id)
+            assertEquals(r.id, Savers.counterpart(original.id)?.id)
+        }
+    }
+
+    @Test fun refinedSitsRightAfterItsOriginalForSwipeComparison() {
+        Savers.all.forEachIndexed { i, s ->
+            if (s.refined) assertEquals(s.variantOf, Savers.all[i - 1].id)
+        }
+    }
 }

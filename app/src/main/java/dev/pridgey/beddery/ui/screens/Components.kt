@@ -94,3 +94,19 @@ operator fun PaddingValues.plus(other: PaddingValues): PaddingValues {
         bottom = calculateBottomPadding() + other.calculateBottomPadding(),
     )
 }
+
+/** Small pill marking the polished version of a screensaver. */
+@Composable
+fun RefinedBadge(modifier: Modifier = Modifier, onDark: Boolean = false) {
+    val bg = if (onDark) Color.White.copy(alpha = 0.16f) else MaterialTheme.colorScheme.tertiaryContainer
+    val fg = if (onDark) Color.White else MaterialTheme.colorScheme.onTertiaryContainer
+    Text(
+        androidx.compose.ui.res.stringResource(dev.pridgey.beddery.R.string.badge_refined).uppercase(),
+        color = fg,
+        style = MaterialTheme.typography.labelSmall.copy(letterSpacing = androidx.compose.ui.unit.TextUnit(1.2f, androidx.compose.ui.unit.TextUnitType.Sp)),
+        modifier = modifier
+            .clip(RoundedCornerShape(50))
+            .background(bg)
+            .padding(horizontal = 8.dp, vertical = 2.dp),
+    )
+}

@@ -165,14 +165,12 @@
     <string name="dream_unavailable">This phone doesn\'t offer Android\'s screensaver. Use Standby mode instead.</string>
     <string name="standby_title">Standby mode</string>
     <string name="standby_desc">Works on any phone. Shows Beddery over the lock screen when you\'re charging. Tap to close.</string>
-    <string name="standby_desc_recommended">Recommended for this phone. Shows Beddery over the lock screen when you\'re charging. Tap to close.</string>
     <string name="standby_on_plug">Start when plugged in</string>
     <string name="standby_on_lock">Start when the screen turns off</string>
     <string name="standby_on_lock_desc">While charging. If you close Beddery, it waits until you unlock or re-plug before showing again.</string>
     <string name="standby_double_tap">Double-tap to close</string>
-    <string name="standby_double_tap_desc">Prevents accidental bumps from closing it at night.</string>
+    <string name="standby_double_tap_desc">Single taps won\'t close Beddery, so a bump in the night won\'t either. Works however Beddery starts.</string>
     <string name="standby_orientation">Orientation</string>
-    <string name="standby_both_note">Tip: use either Android\'s screensaver or Standby mode, not both.</string>
     <string name="orientation_auto">Auto</string>
     <string name="orientation_portrait">Portrait</string>
     <string name="orientation_landscape">Landscape</string>
@@ -204,6 +202,172 @@
     <string name="minutes_short">%1$d min</string>
     <string name="about_version">Version %1$s</string>
     <string name="about_weather_credit">Weather data by Open-Meteo.com (CC BY 4.0).</string>
+
+    <!-- Polish, previews, easter eggs -->
+    <string name="action_close">Close</string>
+    <string name="badge_refined">Refined</string>
+    <string name="saver_refined_name">%1$s (Refined)</string>
+    <string name="badge_recommended">Recommended</string>
+    <string name="category_refined">Refined</string>
+    <string name="preview_showing_while_charging">Showing while charging</string>
+    <string name="preview_swipe_hint">Swipe to browse</string>
+    <string name="notification_new">New notification</string>
+    <string name="easter_wish">Make a wish ✨</string>
+    <string name="detail_compare_original">Compare with the original</string>
+    <string name="detail_compare_refined">See the refined version</string>
+    <string name="detail_refined_note">A polished take on %1$s. Open the full-screen preview and swipe to compare them side by side.</string>
+    <string name="detail_shows_notifications">Shows notifications</string>
+    <string name="detail_preview_tip">Tip: in full-screen preview, swipe left and right to browse.</string>
+    <plurals name="now_shuffling_start">
+        <item quantity="one">Shuffling %1$d screensaver · a new one each time it starts</item>
+        <item quantity="other">Shuffling %1$d screensavers · a new one each time it starts</item>
+    </plurals>
+
+    <!-- New screensavers -->
+    <string name="saver_classic">Bedside Classic</string>
+    <string name="saver_classic_desc">The red LED alarm clock you grew up with: glowing seven-segment digits, a blinking colon and little indicator lamps.</string>
+    <string name="saver_nixie">Nixie</string>
+    <string name="saver_nixie_desc">Glowing orange numerals inside glass tubes, with the unlit digits stacked faintly behind.</string>
+    <string name="saver_odometer">Odometer</string>
+    <string name="saver_odometer_desc">Mechanical number drums that roll over every second, with a little bounce as each digit settles.</string>
+    <string name="saver_bigtype">Big Type</string>
+    <string name="saver_bigtype_desc">The time as bold, poster-sized type. Heavy hours, light minutes, nothing else.</string>
+    <string name="saver_rings">Rings</string>
+    <string name="saver_rings_desc">Hours, minutes and seconds as three smoothly filling rings around the time.</string>
+    <string name="saver_dayarc">Day Arc</string>
+    <string name="saver_dayarc_desc">Follow the sun, or the moon at night, along its path across the sky, with sunrise and sunset times. Uses your weather location when set.</string>
+    <string name="saver_notifications">Notifications</string>
+    <string name="saver_notifications_desc">The time and a calm summary of your notifications, grouped by app. You choose whether message content is shown.</string>
+    <string name="saver_sleep">Sleep</string>
+    <string name="saver_sleep_desc">How long until your alarm, and how many full sleep cycles that leaves. No alarm? It suggests good times to wake up.</string>
+    <string name="saver_moon">Moon Phase</string>
+    <string name="saver_moon_desc">Tonight\'s moon, drawn to its true phase, with how much is lit and when it\'s next full.</string>
+    <string name="saver_month">Month</string>
+    <string name="saver_month_desc">This month at a glance, with today circled and dots on days with events.</string>
+    <string name="saver_progress">Progress</string>
+    <string name="saver_progress_desc">How far through the day, week, month and year you are, plus every day of the year as a dot.</string>
+    <string name="saver_rain">Rain on Glass</string>
+    <string name="saver_rain_desc">Raindrops gather and trickle down a window, with the city\'s lights glowing softly beyond.</string>
+    <string name="saver_campfire">Campfire</string>
+    <string name="saver_campfire_desc">A crackling fire under the stars, with embers drifting up into the night.</string>
+    <string name="saver_candle">Candle</string>
+    <string name="saver_candle_desc">A single flickering candle in a dark room. About as calm as it gets.</string>
+    <string name="saver_snow">Snowfall</string>
+    <string name="saver_snow_desc">Snow falls over a pine forest at night, and a cabin window glows warm in the distance.</string>
+    <string name="saver_koi">Koi Pond</string>
+    <string name="saver_koi_desc">Rain dimples a moonlit pond while a koi drifts beneath the lily pads.</string>
+    <string name="saver_jellyfish">Jellyfish</string>
+    <string name="saver_jellyfish_desc">Glowing jellyfish pulse slowly through the deep, trailing their tentacles.</string>
+    <string name="saver_colorfield">Color Field</string>
+    <string name="saver_colorfield_desc">Soft fields of color drift and blend. The palette changes every few minutes.</string>
+    <string name="saver_flow">Flow Field</string>
+    <string name="saver_flow_desc">Thousands of particles follow invisible currents, leaving silky trails in your accent color.</string>
+    <string name="saver_harmonograph">Harmonograph</string>
+    <string name="saver_harmonograph_desc">A swinging-pendulum drawing machine traces a delicate figure, then starts a new one.</string>
+    <string name="saver_pendulum">Pendulum Wave</string>
+    <string name="saver_pendulum_desc">Eighteen pendulums swing in and out of step, making waves and patterns, and line up again every minute.</string>
+
+    <!-- Refined versions -->
+    <string name="saver_breathe_refined_desc">A glassy orb that fills as you breathe in, with drifting motes, a countdown and a quiet progress ring.</string>
+    <string name="saver_ocean_refined_desc">A textured moon behind drifting clouds, and thousands of tiny sparkles on the swell below.</string>
+    <string name="saver_aurora_refined_desc">Fine, shimmering curtains of light over layered mountains, mirrored in a still lake.</string>
+    <string name="saver_lava_refined_desc">Glossy wax lit from below, melting and merging smoothly in a warm glass lamp.</string>
+    <string name="saver_fireflies_refined_desc">A layered meadow at dusk with fireflies near and far, the closest softly out of focus.</string>
+    <string name="saver_starfield_refined_desc">Stars stream past through colorful nebulae, with fading trails and the occasional jump to hyperspace.</string>
+    <string name="saver_orbits_refined_desc">A detailed solar system: shaded planets, Saturn\'s rings, an asteroid belt and a turbulent sun.</string>
+    <string name="saver_constellation_refined_desc">Stars at different depths link up while tiny signals hop from star to star.</string>
+
+    <!-- New screensaver content -->
+    <string name="unit_h">h</string>
+    <string name="unit_m">m</string>
+    <string name="time_now">now</string>
+    <string name="time_days">%1$d d</string>
+    <string name="dayarc_sunrise">Sunrise</string>
+    <string name="dayarc_sunset">Sunset</string>
+    <string name="dayarc_sunrise_in">Sunrise in %1$s</string>
+    <string name="dayarc_sunset_in">Sunset in %1$s</string>
+    <string name="sleep_until_alarm">until your alarm at %1$s</string>
+    <string name="sleep_short">Less than one full sleep cycle left. Rest well.</string>
+    <plurals name="sleep_cycles">
+        <item quantity="one">Time for %1$d full sleep cycle</item>
+        <item quantity="other">Time for %1$d full sleep cycles</item>
+    </plurals>
+    <string name="sleep_no_alarm">No alarm set</string>
+    <string name="sleep_suggest">Fall asleep now and you\'ll wake between sleep cycles at</string>
+    <string name="sleep_hours">%1$s h</string>
+    <string name="moon_new">New Moon</string>
+    <string name="moon_waxing_crescent">Waxing Crescent</string>
+    <string name="moon_first_quarter">First Quarter</string>
+    <string name="moon_waxing_gibbous">Waxing Gibbous</string>
+    <string name="moon_full">Full Moon</string>
+    <string name="moon_waning_gibbous">Waning Gibbous</string>
+    <string name="moon_last_quarter">Last Quarter</string>
+    <string name="moon_waning_crescent">Waning Crescent</string>
+    <string name="moon_illuminated">%1$d%% illuminated</string>
+    <string name="moon_full_today">Full moon tonight</string>
+    <string name="moon_new_today">New moon tonight</string>
+    <plurals name="moon_full_in">
+        <item quantity="one">Full moon in %1$d day · %2$s</item>
+        <item quantity="other">Full moon in %1$d days · %2$s</item>
+    </plurals>
+    <plurals name="moon_new_in">
+        <item quantity="one">New moon in %1$d day · %2$s</item>
+        <item quantity="other">New moon in %1$d days · %2$s</item>
+    </plurals>
+    <string name="progress_day">Today</string>
+    <string name="progress_week">This week</string>
+    <string name="progress_month">This month</string>
+    <string name="progress_caption">Day %1$d of %2$d · %3$d days left</string>
+    <string name="notifications_saver_off">Notifications are turned off in Beddery\'s settings.</string>
+    <string name="notifications_saver_no_access">Open Beddery and allow notification access to see them here.</string>
+    <string name="notifications_caught_up">You\'re all caught up</string>
+    <plurals name="notifications_count">
+        <item quantity="one">%1$d notification</item>
+        <item quantity="other">%1$d notifications</item>
+    </plurals>
+
+    <!-- How it starts: guidance -->
+    <string name="launch_intro">Beddery can start in two ways while your phone charges. You only need one.</string>
+    <string name="launch_compare">Which should I use?</string>
+    <string name="launch_both_on">Both are on, so Beddery may start twice. We suggest turning one off.</string>
+    <string name="compare_title">Screensaver or Standby?</string>
+    <string name="compare_subtitle">Both show Beddery while your phone charges and keep it locked. The difference is what starts it.</string>
+    <string name="compare_row_starts">Starts</string>
+    <string name="compare_dream_starts">When the screen times out while charging. Android decides when.</string>
+    <string name="compare_standby_starts">The moment you plug in, or when you lock your phone.</string>
+    <string name="compare_row_setup">Setup</string>
+    <string name="compare_dream_setup">Choose Beddery in Android\'s Screen saver settings.</string>
+    <string name="compare_standby_setup">Turn it on here and allow two permissions.</string>
+    <string name="compare_row_works">Works on</string>
+    <string name="compare_dream_works">Most phones. Some makers remove it.</string>
+    <string name="compare_standby_works">Every phone.</string>
+    <string name="compare_row_background">In the background</string>
+    <string name="compare_dream_background">Nothing. It\'s built into Android.</string>
+    <string name="compare_standby_background">A small watcher with a silent notification.</string>
+    <string name="compare_pick">Our pick for this phone</string>
+    <string name="compare_pick_dream">Android screensaver. It\'s built in and needs nothing running in the background. Choose Standby if you\'d like Beddery to appear the moment you plug in.</string>
+    <string name="compare_pick_standby">Standby mode. This phone doesn\'t include Android\'s screensaver, and Standby works everywhere.</string>
+    <string name="compare_setup_dream">Set up screensaver</string>
+    <string name="compare_setup_standby">Turn on Standby</string>
+    <string name="standby_short">Standby mode</string>
+
+    <!-- Notifications settings -->
+    <string name="section_notifications">Notifications</string>
+    <string name="notif_access">Notification access</string>
+    <string name="notif_access_desc">Lets clocks and info screens show your notifications. They never leave your phone.</string>
+    <string name="notif_access_granted">Allowed. Supported screensavers show your notifications.</string>
+    <string name="notif_show">Show</string>
+    <string name="notif_off">Off</string>
+    <string name="notif_icons">Icons</string>
+    <string name="notif_previews">Previews</string>
+    <string name="notif_off_desc">Notifications are never shown.</string>
+    <string name="notif_icons_desc">Shows which apps have new notifications, without any content.</string>
+    <string name="notif_previews_desc">Also shows the sender and message. Anyone near your phone can read them.</string>
+    <string name="notif_night">During night mode</string>
+    <string name="notif_night_desc">Off keeps your sleep hours free of notifications</string>
+    <string name="notif_footnote">Silent and ongoing notifications are skipped. Apps that hide their content on your lock screen stay hidden here too.</string>
+    <string name="shuffle_when">New screensaver</string>
+    <string name="shuffle_each_start">Each time it starts</string>
 
     <!-- Notifications -->
     <string name="channel_watcher">Standby mode</string>

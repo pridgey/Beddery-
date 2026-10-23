@@ -40,7 +40,9 @@ class BedderyDreamService : DreamService(), LifecycleOwner, SavedStateRegistryOw
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        isInteractive = false // any touch wakes the device, like other screensavers
+        // Any touch wakes the device, like other screensavers, unless the user chose
+        // "double-tap to close": then Beddery handles touches itself (see onSettings below).
+        isInteractive = false
         isFullscreen = true
         isScreenBright = true
 
@@ -49,7 +51,13 @@ class BedderyDreamService : DreamService(), LifecycleOwner, SavedStateRegistryOw
             setViewTreeSavedStateRegistryOwner(this@BedderyDreamService)
             setViewTreeViewModelStoreOwner(this@BedderyDreamService)
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
-            setContent { ScreensaverScreen(window = window) }
+            setContent {
+                ScreensaverScreen(
+                    window = window,
+                    onClose = { finish() },
+                    onSettings = { isInteractive = it.doubleTapToExit },
+                )
+            }
         }
         // The window's decor view is searched too, so set owners there as well.
         window?.decorView?.let {

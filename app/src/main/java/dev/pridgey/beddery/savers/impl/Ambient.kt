@@ -19,6 +19,8 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
+import dev.pridgey.beddery.savers.Cooldown
+import dev.pridgey.beddery.savers.OnSaverTap
 import dev.pridgey.beddery.savers.SaverContext
 import dev.pridgey.beddery.savers.rememberFrameTime
 import kotlin.math.PI
@@ -36,10 +38,18 @@ private class Starfield(val n: Int) {
     val z = FloatArray(n) { 0.05f + r.nextFloat() * 0.95f }
     val tint = FloatArray(n) { r.nextFloat() }
     var speed = 0.2f
+    private var boostAt = -100f
+
+    /** Easter egg: a tap punches it to warp for a few seconds. */
+    fun boost(t: Float) {
+        boostAt = t
+    }
 
     fun step(dt: Float, t: Float) {
         // Gentle surges, like dropping in and out of warp.
-        speed = 0.12f + 0.1f * (0.5f + 0.5f * sin(t * 0.11f)) + 0.25f * sin(t * 0.04f).coerceAtLeast(0f).let { it * it * it }
+        val since = t - boostAt
+        val kick = if (since in 0f..6f) sin(since / 6f * PI.toFloat()) * 0.9f else 0f
+        speed = 0.12f + 0.1f * (0.5f + 0.5f * sin(t * 0.11f)) + 0.25f * sin(t * 0.04f).coerceAtLeast(0f).let { it * it * it } + kick
         for (i in 0 until n) {
             z[i] -= speed * dt
             if (z[i] <= 0.02f) {
@@ -55,6 +65,8 @@ private class Starfield(val n: Int) {
 fun StarfieldSaver(ctx: SaverContext) {
     val field = remember { Starfield(if (ctx.preview) 140 else 420) }
     val time = rememberFrameTime { dt, t -> field.step(dt, t) }
+    val cooldown = remember { Cooldown(15_000) }
+    OnSaverTap { if (cooldown.tryAcquire()) field.boost(time.value) }
     Canvas(Modifier.fillMaxSize()) {
         time.value
         drawRect(Color.Black)
@@ -94,7 +106,9 @@ private val Planets = listOf(
 @Composable
 fun OrbitsSaver(@Suppress("UNUSED_PARAMETER") ctx: SaverContext) {
     val stars = remember { val r = Random(9); List(150) { floatArrayOf(r.nextFloat(), r.nextFloat(), r.nextFloat()) } }
-    val time = rememberFrameTime()
+    val launcher = remember { CometLauncher() }
+    val time = rememberFrameTime { dt, t -> launcher.step(dt, t) }
+    OnSaverTap { launcher.tap() }
     Canvas(Modifier.fillMaxSize()) {
         val t = time.value + 400f
         drawRect(Color(0xFF02030A))
@@ -129,6 +143,7 @@ fun OrbitsSaver(@Suppress("UNUSED_PARAMETER") ctx: SaverContext) {
         val sunR = scale * 0.06f
         drawCircle(Brush.radialGradient(listOf(Color(0x66FFB347), Color.Transparent), c, sunR * 5), sunR * 5, c)
         drawCircle(Brush.radialGradient(listOf(Color(0xFFFFF4C2), Color(0xFFFFB347)), c, sunR), sunR, c)
+        launcher.comet.draw(this, c, scale, tilt)
         drawPlanets(front = true)
     }
 }
@@ -278,6 +293,22 @@ private class Life {
         history.clear()
     }
 
+    /** Easter egg: launches a glider from the tapped cell, heading away from the center. */
+    fun glider(cx: Int, cy: Int) {
+        if (cols == 0) return
+        val sx = if (cx < cols / 2) -1 else 1
+        val sy = if (cy < rows / 2) -1 else 1
+        val shape = listOf(1 to 0, 2 to 1, 0 to 2, 1 to 2, 2 to 2)
+        for (y in -2..4) for (x in -2..4) set(cx + x * sx, cy + y * sy, 0)
+        shape.forEach { (x, y) -> set(cx + (x - 1) * sx, cy + (y - 1) * sy, 1) }
+    }
+
+    private fun set(x: Int, y: Int, v: Int) {
+        val xx = (x % cols + cols) % cols
+        val yy = (y % rows + rows) % rows
+        age[yy * cols + xx] = v
+    }
+
     fun step(dt: Float) {
         if (cols == 0) return
         acc += dt
@@ -318,6 +349,8 @@ private class Life {
 fun GameOfLifeSaver(ctx: SaverContext) {
     val life = remember { Life() }
     val time = rememberFrameTime { dt, _ -> life.step(dt) }
+    val layout = remember { floatArrayOf(0f, 0f, 1f) } // offset x, offset y, cell size
+    OnSaverTap { at -> life.glider(((at.x - layout[0]) / layout[2]).toInt(), ((at.y - layout[1]) / layout[2]).toInt()) }
     val young = ctx.accent
     val old = Color(0xFF2A3F6B)
     Canvas(Modifier.fillMaxSize()) {
@@ -327,6 +360,7 @@ fun GameOfLifeSaver(ctx: SaverContext) {
         life.ensure((size.width / cell).toInt(), (size.height / cell).toInt())
         val ox = (size.width - life.cols * cell) / 2
         val oy = (size.height - life.rows * cell) / 2
+        layout[0] = ox; layout[1] = oy; layout[2] = cell
         val gap = cell * 0.12f
         for (y in 0 until life.rows) {
             for (x in 0 until life.cols) {

@@ -59,6 +59,7 @@ class MainActivity : ComponentActivity() {
                                     settings = s,
                                     viewModel = viewModel,
                                     onBack = { nav.popBackStack() },
+                                    onOpenSaver = { id -> nav.navigate("saver/$id") },
                                 )
                             }
                         }

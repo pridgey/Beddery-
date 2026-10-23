@@ -68,4 +68,30 @@ object CalendarRepository {
         }
         events.sortedWith(compareBy({ it.begin.toLocalDate() }, { !it.allDay }, { it.begin })).take(limit)
     }
+
+    /** Days in [from]..[to] that have at least one event, for the month view. */
+    suspend fun eventDays(context: Context, from: java.time.LocalDate, to: java.time.LocalDate): Set<java.time.LocalDate> = withContext(Dispatchers.IO) {
+        if (!hasPermission(context)) return@withContext emptySet()
+        val zone = ZoneId.systemDefault()
+        val start = from.atStartOfDay(zone).toInstant().toEpochMilli()
+        val end = to.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        val uri = CalendarContract.Instances.CONTENT_URI.buildUpon().also {
+            ContentUris.appendId(it, start - 24 * 3_600_000L)
+            ContentUris.appendId(it, end)
+        }.build()
+        val days = HashSet<java.time.LocalDate>()
+        runCatching {
+            context.contentResolver.query(
+                uri, arrayOf(CalendarContract.Instances.BEGIN, CalendarContract.Instances.ALL_DAY),
+                "${CalendarContract.Instances.VISIBLE} = 1", null, null,
+            )?.use { c ->
+                while (c.moveToNext()) {
+                    val z = if (c.getInt(1) == 1) ZoneOffset.UTC else zone
+                    val day = LocalDateTime.ofInstant(Instant.ofEpochMilli(c.getLong(0)), z).toLocalDate()
+                    if (!day.isBefore(from) && !day.isAfter(to)) days += day
+                }
+            }
+        }
+        days
+    }
 }
