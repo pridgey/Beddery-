@@ -62,7 +62,12 @@ import dev.pridgey.beddery.data.NotificationsMode
 import dev.pridgey.beddery.notifications.NotificationStore
 import dev.pridgey.beddery.notifications.byApp
 import dev.pridgey.beddery.savers.AppGlyph
+import dev.pridgey.beddery.savers.MoonRender
 import dev.pridgey.beddery.savers.SaverContext
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import dev.pridgey.beddery.savers.StarSky
 import dev.pridgey.beddery.savers.StatusLine
 import dev.pridgey.beddery.savers.TabularNumbers
@@ -102,7 +107,7 @@ private fun TimeHeader(ctx: SaverContext, size: TextUnit, align: Alignment.Horiz
 @Composable
 fun SleepSaver(ctx: SaverContext) {
     val sampleAlarm = remember { LocalDateTime.now().plusHours(7).plusMinutes(25) }
-    val alarm = ctx.nextAlarm ?: if (ctx.preview) sampleAlarm else null
+    val alarm = ctx.nextAlarm ?: if (ctx.demo) sampleAlarm else null
     val stars = remember { StarSky(90, 17, 0f, 1f) }
     BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         val unit = min(maxWidth, maxHeight)
@@ -204,7 +209,7 @@ fun MoonPhaseSaver(ctx: SaverContext) {
     val illum = Astronomy.illumination(phase)
     val southern = ctx.settings.weatherLocation?.let { it.latitude < 0 } ?: (Astronomy.guessLocation(ZoneId.systemDefault()).first < 0)
     val stars = remember { StarSky(200, 81) }
-    val maria = rememberNoiseBrush(256, 3, 6, seed = 82, contrast = 1.8f)
+    val moon = remember((phase * 200).toInt(), southern) { MoonRender.render(480, phase, southern) }
     val nextFull = phase < 0.5
     val days = Astronomy.daysUntil(phase, if (nextFull) 0.5 else 0.0)
     val date = ctx.now.toLocalDate().plusDays(Math.round(days))
@@ -218,23 +223,14 @@ fun MoonPhaseSaver(ctx: SaverContext) {
             stars.draw(this, ctx.now.second * 0.4f, 0.6f, horizonFade = 0f)
             val r = size.minDimension * if (landscape) 0.3f else 0.32f
             val c = if (landscape) Offset(size.width * 0.3f, size.height / 2) else Offset(size.width / 2, size.height * 0.4f)
-            drawCircle(Brush.radialGradient(listOf(Color(0xFFDDE4F5).copy(alpha = 0.05f + 0.13f * illum.toFloat()), Color.Transparent), c, r * 2.2f), r * 2.2f, c)
-            // The dark side, faintly lit by sunlight bouncing off Earth.
-            drawCircle(Color(0xFF0E1016), r, c)
-            clipPath(androidx.compose.ui.graphics.Path().apply { addOval(androidx.compose.ui.geometry.Rect(c, r)) }) {
-                drawRect(
-                    maria.place(r * 2.4f, r * 2.4f, c.x - r, c.y - r), topLeft = c - Offset(r, r), size = Size(r * 2, r * 2),
-                    colorFilter = ColorFilter.tint(Color(0xFF8A94B0), BlendMode.SrcIn), alpha = 0.06f,
-                )
-            }
-            val lit = moonLitPath(c, r, phase, southern)
-            clipPath(lit) {
-                drawCircle(Brush.radialGradient(listOf(Color(0xFFF7F3E8), Color(0xFFDCD5C3), Color(0xFFA9A291)), c - Offset(r * 0.15f, r * 0.2f), r * 1.15f), r, c)
-                drawRect(
-                    maria.place(r * 2.4f, r * 2.4f, c.x - r, c.y - r), topLeft = c - Offset(r, r), size = Size(r * 2, r * 2),
-                    colorFilter = ColorFilter.tint(Color(0xFF5E5848), BlendMode.SrcIn), alpha = 0.42f,
-                )
-            }
+            drawCircle(Brush.radialGradient(listOf(Color(0xFFDDE4F5).copy(alpha = 0.04f + 0.12f * illum.toFloat()), Color.Transparent), c, r * 2.4f), r * 2.4f, c)
+            // Keep the dark side from being lit by stars behind it.
+            drawCircle(Color.Black, r * 0.995f, c)
+            drawImage(
+                moon.asImageBitmap(), srcOffset = IntOffset.Zero, srcSize = IntSize(moon.width, moon.height),
+                dstOffset = IntOffset((c.x - r).toInt(), (c.y - r).toInt()), dstSize = IntSize((r * 2).toInt(), (r * 2).toInt()),
+                filterQuality = FilterQuality.High,
+            )
         }
         val info: @Composable () -> Unit = {
             Column(horizontalAlignment = if (landscape) Alignment.Start else Alignment.CenterHorizontally) {
@@ -268,7 +264,7 @@ fun MonthSaver(ctx: SaverContext) {
     val context = LocalContext.current
     val today = ctx.now.toLocalDate()
     val month = YearMonth.from(today)
-    var events by remember(month) { mutableStateOf(if (ctx.preview) sampleDays(month) else emptySet()) }
+    var events by remember(month) { mutableStateOf(if (ctx.demo) sampleDays(month) else emptySet()) }
     LaunchedEffect(month) {
         while (CalendarRepository.hasPermission(context)) {
             events = CalendarRepository.eventDays(context, month.atDay(1), month.atEndOfMonth())
@@ -457,7 +453,7 @@ fun NotificationsSaver(ctx: SaverContext) {
     val mode = ctx.settings.notificationsMode
     var access by remember { mutableStateOf(NotificationStore.hasAccess(context)) }
     LaunchedEffect(ctx.now.minute) { access = NotificationStore.hasAccess(context) }
-    val items = rememberNotifications(sample = ctx.preview)
+    val items = rememberNotifications(sample = ctx.demo)
     val apps = remember(items) { items.byApp() }
     BoxWithConstraints(Modifier.fillMaxSize().padding(28.dp), contentAlignment = Alignment.Center) {
         val landscape = maxWidth > maxHeight
@@ -465,12 +461,12 @@ fun NotificationsSaver(ctx: SaverContext) {
         val density = LocalDensity.current
         val timeSize = with(density) { (unit * 0.2f).toSp() }
         val body = with(density) { (unit * 0.042f).toSp() }
-        val showContent = mode == NotificationsMode.PREVIEWS || ctx.preview
+        val showContent = mode == NotificationsMode.PREVIEWS || ctx.demo
         val list: @Composable (Modifier) -> Unit = { m ->
             Column(m.widthIn(max = 520.dp), verticalArrangement = Arrangement.spacedBy(unit * 0.025f)) {
                 when {
-                    !ctx.preview && mode == NotificationsMode.OFF -> Hint(stringResource(R.string.notifications_saver_off), body)
-                    !ctx.preview && !access -> Hint(stringResource(R.string.notifications_saver_no_access), body)
+                    !ctx.demo && mode == NotificationsMode.OFF -> Hint(stringResource(R.string.notifications_saver_off), body)
+                    !ctx.demo && !access -> Hint(stringResource(R.string.notifications_saver_no_access), body)
                     apps.isEmpty() -> Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Rounded.CheckCircle, null, tint = ctx.accent.copy(alpha = 0.8f), modifier = Modifier.size(unit * 0.06f))
                         Spacer(Modifier.width(12.dp))

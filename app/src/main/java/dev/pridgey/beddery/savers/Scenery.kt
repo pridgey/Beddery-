@@ -278,26 +278,48 @@ class Comet {
         val dist = rel.length().coerceAtLeast(0.08f)
         val fade = (sin(p * PI.toFloat()) * 1.4f).coerceIn(0f, 1f)
         val unit = size.minDimension
-        // Dust tail: the curved path it just travelled, softly glowing.
+        // Dust tail: a faint wisp along the path it just travelled.
         trail.forEachIndexed { i, pt ->
             val k = i / trail.size.toFloat()
-            drawCircle(Color(0xFFFFE9C4).copy(alpha = 0.10f * k * fade), unit * (0.003f + 0.006f * k), pt, blendMode = BlendMode.Plus)
+            drawCircle(Color(0xFFFFE9C4).copy(alpha = 0.035f * k * fade), unit * 0.0025f * k, pt, blendMode = BlendMode.Plus)
         }
-        // Ion tail: straight, away from the sun, longer when close.
+        // Ion tail: a fine streak pointing away from the sun, a little longer when close.
         val away = (head - sun).let { it / it.length().coerceAtLeast(1f) }
-        val tailLen = unit * (0.08f + 0.18f / (dist * 3f)).coerceAtMost(unit * 0.45f)
+        val tailLen = unit * (0.04f + 0.05f / (dist * 3f)).coerceAtMost(unit * 0.12f)
         val end = head + away * tailLen
-        val perp = Offset(-away.y, away.x) * unit * 0.012f
-        val tail = Path().apply {
-            moveTo(head.x + perp.x * 0.3f, head.y + perp.y * 0.3f)
-            lineTo(end.x + perp.x, end.y + perp.y)
-            lineTo(end.x - perp.x, end.y - perp.y)
-            lineTo(head.x - perp.x * 0.3f, head.y - perp.y * 0.3f)
-            close()
-        }
-        drawPath(tail, Brush.linearGradient(listOf(Color(0xFF9FDCFF).copy(alpha = 0.55f * fade), Color.Transparent), head, end), blendMode = BlendMode.Plus)
+        drawLine(
+            Brush.linearGradient(listOf(Color(0xFFCFEAFF).copy(alpha = 0.35f * fade), Color.Transparent), head, end),
+            head, end, strokeWidth = unit * 0.0022f, cap = StrokeCap.Round,
+        )
         // Coma and nucleus.
-        drawCircle(Brush.radialGradient(listOf(Color(0xFFBFE8FF).copy(alpha = 0.6f * fade), Color.Transparent), head, unit * 0.025f), unit * 0.025f, head, blendMode = BlendMode.Plus)
-        drawCircle(Color.White.copy(alpha = fade), unit * 0.0035f, head)
+        drawCircle(Brush.radialGradient(listOf(Color(0xFFBFE8FF).copy(alpha = 0.3f * fade), Color.Transparent), head, unit * 0.008f), unit * 0.008f, head, blendMode = BlendMode.Plus)
+        drawCircle(Color.White.copy(alpha = 0.9f * fade), unit * 0.0018f, head)
     }
+}
+
+/** Smooth 2D value noise in -1..1. */
+fun noise2(x: Float, y: Float, seed: Int = 0): Float {
+    val xi = floor(x).toInt()
+    val yi = floor(y).toInt()
+    val xf = x - xi
+    val yf = y - yi
+    val u = xf * xf * (3 - 2 * xf)
+    val v = yf * yf * (3 - 2 * yf)
+    fun h(a: Int, b: Int) = hash(a * 1619 + b * 31337 + seed * 1013) * 2 - 1
+    val a = h(xi, yi) + (h(xi + 1, yi) - h(xi, yi)) * u
+    val b = h(xi, yi + 1) + (h(xi + 1, yi + 1) - h(xi, yi + 1)) * u
+    return a + (b - a) * v
+}
+
+/** Fractal (layered) noise, roughly -1..1. */
+fun fbm2(x: Float, y: Float, octaves: Int = 4, seed: Int = 0): Float {
+    var sum = 0f
+    var amp = 0.5f
+    var f = 1f
+    repeat(octaves) { o ->
+        sum += noise2(x * f, y * f, seed + o * 17) * amp
+        f *= 2f
+        amp *= 0.5f
+    }
+    return sum * 1.07f
 }

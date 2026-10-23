@@ -5,27 +5,28 @@ phone is charging and locked: a clock, the weather, your agenda, or something ca
 
 ## Screensavers
 
-51 screensavers in four groups. Every one works in portrait and landscape, and the gallery shows live previews.
+58 screensavers in four groups. Every one works in portrait and landscape, and the gallery shows live previews.
 
 | Clocks | Info | Relax | Ambient |
 | --- | --- | --- | --- |
-| Minimal | Charging | Breathe ✦ | Starfield ✦ |
-| Analog | Weather | Moonlit Ocean ✦ | Orbits ✦ |
-| Flip Clock | Agenda (calendar) | Aurora ✦ | Constellation ✦ |
-| Bedside Classic (red LED) | Notifications | Lava Lamp ✦ | Jellyfish |
-| Nixie | Sleep (time until alarm) | Fireflies ✦ | Color Field |
-| Odometer | Moon Phase | Rain on Glass | Flow Field |
-| Big Type | Month | Campfire | Harmonograph |
-| Rings | Progress (day, week, year) | Candle | Pendulum Wave |
-| Day Arc (sun and moon) | World Clock | Snowfall | Digital Rain |
-| Word Clock | Photo Frame | Koi Pond | Game of Life |
-| Nightlight (dim red) | | | |
-| Binary | | | |
-| Bouncing Clock | | | |
+| Minimal | Charge Vial | Breathe (+ Refined) | Starfield |
+| Analog | Fill Up | Box Breathing | Orbits |
+| Flip Clock | Power Flow | Tide | Constellation |
+| Bedside Classic (red LED) | Charge Garden | Wind Down | Plexus |
+| Nixie | Power Cells | Count Down | The Orb |
+| Odometer | Charging | Moonlit Ocean | Jellyfish |
+| Big Type | Weather | Aurora | Color Field |
+| Rings | Agenda (calendar) | Lava Lamp | Contours |
+| Day Arc (sun path) | Notifications | Fireflies | Ridgelines |
+| Word Clock | Sleep | Rain on Glass | Flow Field |
+| Nightlight (dim red) | Sleep Coach | Campfire | Harmonograph |
+| Binary | Moon Phase | Candle | Pendulum Wave |
+| Bouncing Clock | Month | Snowfall | Digital Rain |
+| | Progress | Koi Pond | Game of Life |
+| | World Clock | | |
+| | Photo Frame | | |
 
-✦ also comes in a **Refined** version: the same idea, drawn with far more detail (textured moon and
-clouds, lit 3D wax, shaded planets with rings, layered meadows with depth of field). Refined versions sit
-right after their originals, so you can swipe between the two in full-screen preview to compare.
+Breathe also comes in a **Refined** version; swipe between the two in full-screen preview to compare.
 
 Shared features:
 
@@ -47,7 +48,8 @@ Shared features:
 
 Beddery offers two ways to appear while charging:
 
-Settings explains the difference with a side-by-side comparison and recommends one for your phone.
+Settings asks you to pick one (recommending the best fit for your phone), then shows a short checklist
+that ticks itself off as you finish setting it up. "Which should I use?" opens a side-by-side comparison.
 
 1. **Android screensaver** (recommended where available). Beddery is a standard Android screensaver
    (a `DreamService`). Pick it in *Settings → Display → Screen saver* and set it to start while charging.

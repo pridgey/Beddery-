@@ -79,6 +79,8 @@ data class AppSettings(
     val photoUris: List<String> = emptyList(),
     val worldZones: List<String> = DEFAULT_WORLD_ZONES,
     val breathPattern: BreathPattern = BreathPattern.BOX,
+    /** Pendulum Wave speed multiplier. */
+    val pendulumSpeed: Float = 1f,
 
     val onboardingDone: Boolean = false,
 ) {

@@ -29,6 +29,8 @@ import dev.pridgey.beddery.savers.OnSaverTap
 import dev.pridgey.beddery.savers.SaverContext
 import dev.pridgey.beddery.savers.SoftDot
 import dev.pridgey.beddery.savers.TAU
+import dev.pridgey.beddery.savers.hash
+import androidx.compose.ui.graphics.drawscope.clipPath
 import dev.pridgey.beddery.savers.drawGrain
 import dev.pridgey.beddery.savers.rememberFrameTime
 import dev.pridgey.beddery.savers.rememberGrainBrush
@@ -126,58 +128,77 @@ fun JellyfishSaver(ctx: SaverContext) {
 private fun DrawScope.drawJelly(j: Jelly, t: Float, unit: Float, bell: Path, tentacle: Path, filter: ColorFilter) {
     val o = Offset(j.x * size.width, j.y * size.height)
     val c = j.contraction
-    val radius = unit * 0.12f * j.depth
+    val radius = unit * 0.15f * j.depth
     val bw = radius * (1f - 0.17f * c)
-    val bh = radius * 0.8f * (1f + 0.12f * c)
-    val glow = 0.55f + 0.45f * j.depth + j.flash * 1.4f
+    val bh = radius * 0.85f * (1f + 0.12f * c)
+    val glow = ((0.75f + 0.5f * j.depth) * (1f + j.flash * 1.2f)).coerceAtMost(1.7f)
     val col = lerp(j.color, Color.White, j.flash * 0.5f)
-    stamp(SoftDot, o, radius * 5f, alpha = 0.16f * glow, colorFilter = filter, blendMode = BlendMode.Plus)
-    // Tentacles trail behind, swinging more when it's pushing forward.
+    val light = lerp(col, Color.White, 0.45f)
+    stamp(SoftDot, o, radius * 4.5f, alpha = 0.13f * glow, colorFilter = filter, blendMode = BlendMode.Plus)
     val rimY = o.y + bh * 0.3f
-    for (k in 0 until 9) {
-        val bx = o.x + bw * (-0.85f + 1.7f * k / 8f)
+
+    // Long trailing tentacles, swaying more as it pushes forward.
+    for (k in 0 until 7) {
+        val bx = o.x + bw * (-0.8f + 1.6f * k / 6f)
         tentacle.reset()
         tentacle.moveTo(bx, rimY)
-        val segs = 18
-        val len = radius * (2.6f + (k % 3) * 0.5f)
-        for (s in 1..segs) {
-            val f = s / segs.toFloat()
-            val sway = sin(t * 1.4f - f * 5f + k * 1.3f) * radius * 0.25f * f + sin(t * 0.6f + k) * radius * 0.1f * f
-            tentacle.lineTo(bx + sway + (bx - o.x) * 0.35f * f, rimY + f * len * (1f - 0.15f * c))
+        val len = radius * (3.2f + (k % 3) * 0.6f)
+        for (s in 1..20) {
+            val f = s / 20f
+            val sway = sin(t * 1.3f - f * 5f + k * 1.3f) * radius * 0.28f * f + sin(t * 0.5f + k) * radius * 0.12f * f
+            tentacle.lineTo(bx + sway + (bx - o.x) * 0.25f * f, rimY + f * len * (1f - 0.15f * c))
         }
-        drawPath(tentacle, col.copy(alpha = 0.22f * glow.coerceAtMost(1.6f)), style = Stroke(unit * 0.0016f, cap = StrokeCap.Round), blendMode = BlendMode.Plus)
+        drawPath(tentacle, col.copy(alpha = 0.16f * glow), style = Stroke(unit * 0.0012f, cap = StrokeCap.Round), blendMode = BlendMode.Plus)
     }
-    // Frilly oral arms.
-    for (k in -1..1) {
-        tentacle.reset()
-        tentacle.moveTo(o.x + k * bw * 0.15f, rimY)
-        for (s in 1..14) {
-            val f = s / 14f
-            tentacle.lineTo(o.x + k * bw * 0.2f + sin(t * 1.1f - f * 6f + k) * radius * 0.12f, rimY + f * radius * 1.6f)
+    // Frilly oral arms trailing from the center.
+    for (k in 0 until 4) {
+        val side = (k - 1.5f) / 1.5f
+        for (s in 0 until 22) {
+            val f = s / 22f
+            val x = o.x + side * bw * 0.18f * (1f - f * 0.5f) + sin(t * 1.0f - f * 6f + k * 1.7f) * radius * 0.16f * f
+            val y = rimY - bh * 0.1f + f * radius * 2f
+            val frill = 0.5f + 0.5f * sin(f * 30f + t * 2f + k)
+            stamp(SoftDot, Offset(x, y), radius * (0.16f + 0.1f * frill) * (1f - f * 0.5f), alpha = 0.12f * glow * (1f - f * 0.6f), colorFilter = filter, blendMode = BlendMode.Plus)
         }
-        drawPath(tentacle, col.copy(alpha = 0.14f * glow.coerceAtMost(1.6f)), style = Stroke(unit * 0.008f * j.depth, cap = StrokeCap.Round), blendMode = BlendMode.Plus)
     }
-    // The bell: a translucent dome with a scalloped rim.
+
+    // The bell: a translucent dome, glowing brightest at its edges.
     bell.reset()
     bell.moveTo(o.x - bw, rimY)
-    bell.cubicTo(o.x - bw * 1.05f, o.y - bh * 0.9f, o.x + bw * 1.05f, o.y - bh * 0.9f, o.x + bw, rimY)
-    val scallops = 8
+    bell.cubicTo(o.x - bw * 1.05f, o.y - bh * 0.95f, o.x + bw * 1.05f, o.y - bh * 0.95f, o.x + bw, rimY)
+    val scallops = 10
     for (s in scallops - 1 downTo 0) {
         val x0 = o.x - bw + 2 * bw * s / scallops
-        val xm = x0 + bw / scallops
-        bell.quadraticTo(xm, rimY - bh * 0.12f, x0, rimY)
+        bell.quadraticTo(x0 + bw / scallops, rimY - bh * 0.08f, x0, rimY)
     }
     bell.close()
+    val bellCenter = Offset(o.x, o.y - bh * 0.15f)
     drawPath(
         bell,
-        Brush.radialGradient(listOf(col.copy(alpha = 0.42f * glow.coerceAtMost(1.5f)), col.copy(alpha = 0.14f), col.copy(alpha = 0.06f)), Offset(o.x, o.y - bh * 0.3f), bw * 1.2f),
+        Brush.radialGradient(0f to col.copy(alpha = 0.06f), 0.6f to col.copy(alpha = 0.16f * glow), 1f to light.copy(alpha = 0.42f * glow), center = bellCenter, radius = bw * 1.05f),
         blendMode = BlendMode.Plus,
     )
-    drawPath(bell, col.copy(alpha = 0.55f * glow.coerceAtMost(1.5f)), style = Stroke(unit * 0.0018f), blendMode = BlendMode.Plus)
-    for (k in 0 until 4) {
-        val a = k * PI.toFloat() / 2 + t * 0.2f
-        val lo = Offset(o.x + cos(a) * bw * 0.3f, o.y - bh * 0.15f + sin(a) * bh * 0.12f)
-        drawCircle(lerp(col, Color.White, 0.4f).copy(alpha = 0.2f * glow.coerceAtMost(1.5f)), bw * 0.14f, lo, blendMode = BlendMode.Plus)
+    // Inner bell and radial canals.
+    clipPath(bell) {
+        drawOval(
+            Brush.radialGradient(listOf(light.copy(alpha = 0.16f * glow), Color.Transparent), bellCenter, bw * 0.6f),
+            Offset(o.x - bw * 0.6f, o.y - bh * 0.62f), Size(bw * 1.2f, bh * 0.95f), blendMode = BlendMode.Plus,
+        )
+        for (k in 0 until 8) {
+            val f = (k + 0.5f) / 8f
+            val end = Offset(o.x - bw + 2 * bw * f, rimY)
+            drawLine(light.copy(alpha = 0.1f * glow), Offset(o.x, o.y - bh * 0.62f), end, strokeWidth = unit * 0.0012f, blendMode = BlendMode.Plus)
+        }
+        drawArc(Color.White.copy(alpha = 0.12f * glow), 200f, 70f, false, Offset(o.x - bw * 0.75f, o.y - bh * 0.7f), Size(bw * 1.5f, bh * 1.2f), style = Stroke(unit * 0.003f, cap = StrokeCap.Round))
+    }
+    drawPath(bell, light.copy(alpha = 0.4f * glow), style = Stroke(unit * 0.0015f), blendMode = BlendMode.Plus)
+    // A fringe of fine tentacles along the rim.
+    for (k in 0 until 26) {
+        val f = k / 25f
+        val bx = o.x - bw + 2 * bw * f
+        val len = radius * (0.4f + 0.35f * hash(k, 3))
+        val sway = sin(t * 2f + k * 0.7f) * radius * 0.06f
+        drawLine(light.copy(alpha = 0.18f * glow), Offset(bx, rimY), Offset(bx + sway, rimY + len * (1f - 0.2f * c)), strokeWidth = unit * 0.0009f, blendMode = BlendMode.Plus)
     }
 }
 
@@ -236,7 +257,9 @@ fun ColorFieldSaver(ctx: SaverContext) {
 
 private class Harmonograph(seed: Int) {
     private val r = Random(seed)
-    private val ratios = listOf(2f to 3f, 3f to 4f, 1f to 2f, 3f to 5f, 2f to 5f, 4f to 5f)
+    private val ratios = listOf(2f to 3f, 3f to 4f, 1f to 2f, 3f to 5f, 2f to 5f, 4f to 5f, 1f to 3f, 5f to 6f, 3f to 7f, 1f to 1f)
+    /** Rotary harmonographs swing in circles, drawing spirograph-like loops. */
+    private val rotary = r.nextFloat() < 0.4f
     private val ratio = ratios[r.nextInt(ratios.size)]
     private val f = floatArrayOf(ratio.first, ratio.second + 0.004f + r.nextFloat() * 0.01f, ratio.second, ratio.first + 0.003f + r.nextFloat() * 0.01f)
     private val p = FloatArray(4) { r.nextFloat() * TAU }
@@ -254,8 +277,12 @@ private class Harmonograph(seed: Int) {
         val n = (perSecond * dt).toInt().coerceAtLeast(1)
         repeat(n) {
             s += 0.02f
-            val x = a[0] * sin(f[0] * s + p[0]) * exp(-d[0] * s) + a[1] * sin(f[1] * s + p[1]) * exp(-d[1] * s)
-            val y = a[2] * sin(f[2] * s + p[2]) * exp(-d[2] * s) + a[3] * sin(f[3] * s + p[3]) * exp(-d[3] * s)
+            var x = a[0] * sin(f[0] * s + p[0]) * exp(-d[0] * s) + a[1] * sin(f[1] * s + p[1]) * exp(-d[1] * s)
+            var y = a[2] * sin(f[2] * s + p[2]) * exp(-d[2] * s) + a[3] * sin(f[3] * s + p[3]) * exp(-d[3] * s)
+            if (rotary) {
+                x = a[0] * sin(f[0] * s + p[0]) * exp(-d[0] * s) + a[1] * cos(f[1] * s + p[1]) * exp(-d[1] * s)
+                y = a[0] * cos(f[0] * s + p[0]) * exp(-d[0] * s) + a[1] * sin(f[1] * s + p[1]) * exp(-d[1] * s)
+            }
             xs += x
             ys += y
         }
@@ -326,13 +353,17 @@ fun HarmonographSaver(ctx: SaverContext) {
 
 @Composable
 fun PendulumWaveSaver(ctx: SaverContext) {
-    val time = rememberFrameTime()
+    // Accumulate the swing so changing the speed never makes the pendulums jump.
+    val clock = remember { floatArrayOf(0f) }
+    val speed = ctx.settings.pendulumSpeed
+    val time = rememberFrameTime { dt, _ -> clock[0] += dt * speed }
     val accent = ctx.accent
     val n = 18
     val colors = remember(accent) { List(n) { i -> lerp(accent, lerp(accent, Color(0xFFFF9AB0), 0.7f), i / (n - 1f)) } }
     Canvas(Modifier.fillMaxSize()) {
-        // All pendulums line up again every 60 seconds.
-        val t = time.value
+        // At normal speed, all the pendulums line up again every 60 seconds.
+        time.value
+        val t = clock[0]
         val w = size.width
         val h = size.height
         drawRect(Brush.verticalGradient(listOf(Color(0xFF05060B), Color.Black)))
@@ -400,7 +431,11 @@ private class Flow(val n: Int) {
             val py = y[i]
             val sx = px * scale
             val sy = py * scale
-            val angle = 1.7f * (sin(sx * 0.009f + t * 0.03f) + sin(sy * 0.011f - t * 0.025f) + sin((sx - sy) * 0.006f + t * 0.02f))
+            // The currents themselves slowly change shape: scale, swirl and direction all drift.
+            val k1 = 0.009f * (1f + 0.4f * sin(t * 0.011f))
+            val k2 = 0.011f * (1f + 0.4f * sin(t * 0.017f + 1f))
+            val swirl = 1.5f + 0.7f * sin(t * 0.007f + 2f)
+            val angle = swirl * (sin(sx * k1 + t * 0.03f) + sin(sy * k2 - t * 0.025f) + sin((sx - sy) * 0.006f + t * 0.02f)) + t * 0.01f
             x[i] += cos(angle) * 1.1f / scale * 2.2f
             y[i] += sin(angle) * 1.1f / scale * 2.2f
             life[i] -= dt
@@ -420,8 +455,23 @@ private class Flow(val n: Int) {
 fun FlowFieldSaver(ctx: SaverContext) {
     val flow = remember { Flow(if (ctx.preview) 500 else 1800) }
     val accent = ctx.accent
-    flow.colors = intArrayOf(accent.toArgb(), lerp(accent, Color(0xFFFF9AB0), 0.65f).toArgb(), lerp(accent, Color(0xFF7FE3B8), 0.65f).toArgb())
-    val time = rememberFrameTime { dt, t -> flow.step(dt, t) }
+    // Every few minutes the colors drift to a new palette.
+    val palettes = remember(accent) {
+        listOf(
+            listOf(accent, lerp(accent, Color(0xFFFF9AB0), 0.65f), lerp(accent, Color(0xFF7FE3B8), 0.65f)),
+            listOf(Color(0xFFFFB25A), Color(0xFFFF6A5A), Color(0xFFFFE0A0)),
+            listOf(Color(0xFF5AD1FF), Color(0xFF6A7CFF), Color(0xFFB8F2FF)),
+            listOf(Color(0xFFD08CFF), Color(0xFFFF8AC8), Color(0xFF8AA0FF)),
+        )
+    }
+    val time = rememberFrameTime { dt, t ->
+        val cycle = t / 240f
+        val a = palettes[cycle.toInt() % palettes.size]
+        val b = palettes[(cycle.toInt() + 1) % palettes.size]
+        val k = smoothstep(0.85f, 1f, cycle % 1f)
+        flow.colors = IntArray(3) { lerp(a[it], b[it], k).toArgb() }
+        flow.step(dt, t)
+    }
     Canvas(Modifier.fillMaxSize()) {
         time.value
         flow.ensure((size.width / 2).toInt(), (size.height / 2).toInt())

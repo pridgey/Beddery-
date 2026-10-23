@@ -78,11 +78,11 @@ class AppScreensTest {
         compose.mainClock.advanceTimeBy(1_500)
 
         // A refined screensaver links back to its original for comparison.
-        compose.onAllNodes(hasScrollToIndexAction()).onFirst().performScrollToKey("aurora_refined")
+        compose.onAllNodes(hasScrollToIndexAction()).onFirst().performScrollToKey("breathe_refined")
         compose.mainClock.advanceTimeBy(500)
         compose.onAllNodesWithText("REFINED").onFirst().assertExists()
-        // Its title is the last "Aurora" (the original sits just before it).
-        compose.onAllNodesWithText("Aurora").onLast().performClick()
+        // Its title is the last "Breathe" (the original sits just before it).
+        compose.onAllNodesWithText("Breathe").onLast().performClick()
         compose.mainClock.advanceTimeBy(1_500)
         compose.onNodeWithText("Compare with the original").assertExists()
         snapshot("detail_refined")
@@ -110,17 +110,17 @@ class AppScreensTest {
             File(outDir, "app_compare_sheet.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 90, it) }
         }.onFailure { println("Couldn't capture sheet: $it") }
         // This test phone has no Android screensaver, so the sheet recommends Standby and can turn it on.
-        compose.onNodeWithText("Turn on Standby").performClick()
+        compose.onAllNodesWithText("Use Standby").onFirst().performClick()
         compose.mainClock.advanceTimeBy(1_500)
         waitFor { compose.onAllNodesWithText("Start when plugged in").fetchSemanticsNodes().isNotEmpty() }
         compose.mainClock.advanceTimeBy(1_000)
         snapshot("settings_standby")
-        // Settings items: 0 how it starts, 1 display, 2 notifications, 3 night, 4 shuffle.
-        compose.onAllNodes(hasScrollToIndexAction()).onFirst().performScrollToIndex(2)
+        // Settings items: 0 how it starts, 1 what's shown, 2 look, 3 while showing, 4 notifications, 5 night.
+        compose.onAllNodes(hasScrollToIndexAction()).onFirst().performScrollToIndex(4)
         compose.mainClock.advanceTimeBy(800)
         compose.onNodeWithText("Notification access").assertExists()
         snapshot("settings_notifications")
-        compose.onAllNodes(hasScrollToIndexAction()).onFirst().performScrollToIndex(4)
+        compose.onAllNodes(hasScrollToIndexAction()).onFirst().performScrollToIndex(1)
         compose.mainClock.advanceTimeBy(800)
         compose.onNodeWithText("Shuffle screensavers").performClick()
         waitFor { compose.onAllNodesWithText("Each time it starts").fetchSemanticsNodes().isNotEmpty() }

@@ -27,10 +27,12 @@ data class SaverContext(
     val settings: AppSettings,
     /** True when drawn as a small gallery thumbnail: savers should do less work and may show sample data. */
     val preview: Boolean,
+    /** Shown as a preview (thumbnail or full-screen): use sample data where real data is missing. */
+    val demo: Boolean = preview,
 )
 
 @Composable
-fun rememberSaverContext(settings: AppSettings, preview: Boolean): SaverContext {
+fun rememberSaverContext(settings: AppSettings, preview: Boolean, demo: Boolean = preview): SaverContext {
     val context = LocalContext.current
     val now by remember { clockFlow() }.collectAsStateWithLifecycle(LocalDateTime.now().withNano(0))
     val battery by remember(context) { context.batteryFlow() }.collectAsStateWithLifecycle(BatteryStatus.Unknown)
@@ -48,5 +50,6 @@ fun rememberSaverContext(settings: AppSettings, preview: Boolean): SaverContext 
         nextAlarm = alarm,
         settings = settings,
         preview = preview,
+        demo = demo,
     )
 }

@@ -113,7 +113,7 @@ fun HomeScreen(settings: AppSettings, viewModel: MainViewModel, onOpenSaver: (St
             if (t == 0) {
                 GalleryTab(settings, viewModel, onOpenSaver, padding, onSetup = { tab = 1 })
             } else {
-                SettingsTab(settings, viewModel, padding)
+                SettingsTab(settings, viewModel, padding, onOpenGallery = { tab = 0 })
             }
         }
     }

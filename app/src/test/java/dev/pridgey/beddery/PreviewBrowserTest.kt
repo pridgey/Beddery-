@@ -31,11 +31,11 @@ class PreviewBrowserTest {
 
     @Test
     fun swipeBrowsesToTheRefinedVersion() {
-        val intent = StandbyActivity.intent(ApplicationProvider.getApplicationContext(), preview = true, saverId = "aurora")
+        val intent = StandbyActivity.intent(ApplicationProvider.getApplicationContext(), preview = true, saverId = "breathe")
         ActivityScenario.launch<StandbyActivity>(intent).use { scenario ->
             compose.mainClock.autoAdvance = false
             compose.mainClock.advanceTimeBy(2_000)
-            compose.onNodeWithText("Aurora").assertExists()
+            compose.onNodeWithText("Breathe").assertExists()
             compose.onNodeWithText("Swipe to browse").assertExists()
             compose.onRoot().performTouchInput { swipeLeft() }
             compose.mainClock.advanceTimeBy(1_500)

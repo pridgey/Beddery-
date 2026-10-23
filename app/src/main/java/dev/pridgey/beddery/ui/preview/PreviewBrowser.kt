@@ -103,7 +103,7 @@ fun PreviewBrowser(window: Window?, startId: String?, onClose: () -> Unit) {
         savers.indexOfFirst { it.id == id }.coerceAtLeast(0)
     }
     val pager = rememberPagerState(initialPage = startPage) { savers.size }
-    val saverContext = rememberSaverContext(s, preview = false)
+    val saverContext = rememberSaverContext(s, preview = false, demo = true)
     WindowBrightness(window, s, s.isNight(saverContext.now.toLocalTime()))
     val input = remember { SaverInput() }
     val context = LocalContext.current

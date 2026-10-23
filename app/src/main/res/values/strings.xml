@@ -268,7 +268,7 @@
     <string name="saver_pendulum_desc">Eighteen pendulums swing in and out of step, making waves and patterns, and line up again every minute.</string>
 
     <!-- Refined versions -->
-    <string name="saver_breathe_refined_desc">A glassy orb that fills as you breathe in, with drifting motes, a countdown and a quiet progress ring.</string>
+    <string name="saver_breathe_refined_desc">A soft, glassy orb that fills as you breathe in and empties as you breathe out, with a quiet progress ring. Nothing else.</string>
     <string name="saver_ocean_refined_desc">A textured moon behind drifting clouds, and thousands of tiny sparkles on the swell below.</string>
     <string name="saver_aurora_refined_desc">Fine, shimmering curtains of light over layered mountains, mirrored in a still lake.</string>
     <string name="saver_lava_refined_desc">Glossy wax lit from below, melting and merging smoothly in a warm glass lamp.</string>
@@ -286,6 +286,7 @@
     <string name="dayarc_sunset">Sunset</string>
     <string name="dayarc_sunrise_in">Sunrise in %1$s</string>
     <string name="dayarc_sunset_in">Sunset in %1$s</string>
+    <string name="dayarc_daylight">%1$s of daylight today</string>
     <string name="sleep_until_alarm">until your alarm at %1$s</string>
     <string name="sleep_short">Less than one full sleep cycle left. Rest well.</string>
     <plurals name="sleep_cycles">
@@ -368,6 +369,123 @@
     <string name="notif_footnote">Silent and ongoing notifications are skipped. Apps that hide their content on your lock screen stay hidden here too.</string>
     <string name="shuffle_when">New screensaver</string>
     <string name="shuffle_each_start">Each time it starts</string>
+
+    <!-- Settings v2 -->
+    <string name="section_shown">What\'s shown</string>
+    <string name="section_look">Look</string>
+    <string name="section_while_showing">While it\'s showing</string>
+    <plurals name="shown_shuffling">
+        <item quantity="one">Shuffling %1$d screensaver</item>
+        <item quantity="other">Shuffling %1$d screensavers</item>
+    </plurals>
+    <string name="shown_change">Browse screensavers</string>
+    <string name="method_dream_detail">Built into Android. Starts when the screen times out.</string>
+    <string name="method_dream_unavailable">Not available on this phone.</string>
+    <string name="method_standby_detail">Starts the moment you plug in. Works on every phone.</string>
+    <string name="setup_steps">Finish setting up</string>
+    <string name="setup_dream_select">Choose Beddery as the screen saver</string>
+    <string name="setup_dream_select_detail">In Android\'s Screen saver settings, pick Beddery.</string>
+    <string name="setup_dream_charging">Start it while charging</string>
+    <string name="setup_dream_charging_detail">Under \"When to start\", choose while charging.</string>
+    <string name="setup_dream_footer">Android starts the screensaver once the screen times out while charging. Want Beddery the moment you plug in? Choose Standby instead.</string>
+    <string name="setup_standby_notifications">Allow notifications</string>
+    <string name="setup_standby_notifications_detail">Lets Beddery appear on your lock screen.</string>
+    <string name="setup_standby_full_screen">Allow full-screen notifications</string>
+    <string name="setup_standby_full_screen_detail">Lets Beddery take over the lock screen.</string>
+    <string name="setup_standby_battery">Keep it running</string>
+    <string name="setup_standby_battery_detail">Some phones close background apps. Turning off battery optimization keeps Standby reliable.</string>
+    <string name="setup_optional">Optional</string>
+    <string name="setup_done">Done</string>
+    <string name="setup_unknown">Android doesn\'t say whether this is done. Open settings to check.</string>
+    <string name="setup_status_choose">Choose how Beddery starts</string>
+    <string name="setup_status_ready_dream">Ready. Beddery starts when your screen times out while charging.</string>
+    <string name="setup_status_ready_standby">Ready. Beddery starts when you plug in.</string>
+    <string name="setup_status_probably">Almost ready. Check the steps below.</string>
+    <plurals name="setup_status_steps">
+        <item quantity="one">%1$d step left</item>
+        <item quantity="other">%1$d steps left</item>
+    </plurals>
+    <string name="compare_use_dream">Use Android screensaver</string>
+    <string name="compare_use_standby">Use Standby</string>
+    <string name="saver_plexus">Plexus</string>
+    <string name="saver_plexus_desc">Drifting points link up into an ever-changing geometric web, in your accent color.</string>
+
+    <!-- Round three screensavers -->
+    <string name="saver_battery_vial">Charge Vial</string>
+    <string name="saver_battery_vial_desc">Your battery as glowing liquid in a glass vial, bubbling while it charges.</string>
+    <string name="saver_battery_fill">Fill Up</string>
+    <string name="saver_battery_fill_desc">Your charge as one giant number that fills with color from the bottom up.</string>
+    <string name="saver_battery_flow">Power Flow</string>
+    <string name="saver_battery_flow_desc">Watch energy flow up the cable into the battery, faster on a fast charger. Wireless charging shows rings rising from the pad.</string>
+    <string name="saver_battery_garden">Charge Garden</string>
+    <string name="saver_battery_garden_desc">A little plant that grows as your phone charges, and blooms when it\'s full.</string>
+    <string name="saver_battery_cells">Power Cells</string>
+    <string name="saver_battery_cells_desc">A big battery made of ten glowing cells, with a light sweeping through the ones still charging.</string>
+    <string name="saver_sleepcoach">Sleep Coach</string>
+    <string name="saver_sleepcoach_desc">A very supportive sheep who has opinions about how much sleep you\'re about to get.</string>
+    <string name="saver_boxbreath">Box Breathing</string>
+    <string name="saver_boxbreath_desc">Follow a dot around a square: breathe in, hold, breathe out, hold, four seconds each.</string>
+    <string name="saver_tide">Tide</string>
+    <string name="saver_tide_desc">Breathe with the sea. The tide rises as you breathe in and falls as you breathe out.</string>
+    <string name="saver_winddown">Wind Down</string>
+    <string name="saver_winddown_desc">Gentle prompts, one at a time, to help your body let go of the day.</string>
+    <string name="saver_countdown">Count Down</string>
+    <string name="saver_countdown_desc">Numbers slowly counting down from 100, one per long breath out. A classic way to drift off.</string>
+    <string name="saver_orb">The Orb</string>
+    <string name="saver_orb_desc">A giant LED sphere over the city. It looks around, blinks, turns into an eyeball or the moon, and nods off at bedtime.</string>
+    <string name="saver_contours">Contours</string>
+    <string name="saver_contours_desc">Topographic lines over a landscape that slowly shifts and reshapes itself.</string>
+    <string name="saver_ridgelines">Ridgelines</string>
+    <string name="saver_ridgelines_desc">Stacked lines rise into mountain ridges that roll slowly towards you.</string>
+    <string name="box_breath_hint">Four seconds each side</string>
+    <string name="count_down_hint">Breathe out slowly as each number changes</string>
+    <string name="coach_until">until your %1$s alarm</string>
+    <string name="coach_goal">8h goal</string>
+    <string name="pendulum_speed">Speed</string>
+    <string name="pendulum_speed_desc">At normal speed, the pendulums line up again every minute.</string>
+    <string name="speed_slow">Slow</string>
+    <string name="speed_normal">Normal</string>
+    <string name="speed_fast">Fast</string>
+    <string-array name="coach_thrilled">
+        <item>Over 9 hours?! Who ARE you?</item>
+        <item>Look at you, getting real sleep. I\'m so proud I could cry.</item>
+        <item>Early night! Your future self says thanks.</item>
+    </string-array>
+    <string-array name="coach_happy">
+        <item>Perfect amount of sleep. Now go. Shoo.</item>
+        <item>This is the way. Lights out!</item>
+        <item>Nailed it. Put the phone down, champ.</item>
+    </string-array>
+    <string-array name="coach_meh">
+        <item>Hmm. That\'s cutting it close.</item>
+        <item>Your future self is taking notes.</item>
+        <item>Still time to salvage this. Bed. Now.</item>
+    </string-array>
+    <string-array name="coach_disappointed">
+        <item>The sheep are disappointed. All of them.</item>
+        <item>Tomorrow\'s coffee is already nervous.</item>
+        <item>I\'m not mad. I\'m just… counting.</item>
+    </string-array>
+    <string-array name="coach_panic">
+        <item>This is fine. Everything is fine.</item>
+        <item>Sleep is a lesson you\'ll learn tomorrow.</item>
+        <item>Go. To. Sleep.</item>
+    </string-array>
+    <string-array name="coach_no_alarm">
+        <item>No alarm? Bold strategy.</item>
+        <item>No alarm set. Living dangerously, I see.</item>
+        <item>Sleeping in? I\'ll just be here. Judging.</item>
+    </string-array>
+    <string-array name="wind_down_prompts">
+        <item>Let your shoulders drop.</item>
+        <item>Unclench your jaw.</item>
+        <item>Soften the space between your eyes.</item>
+        <item>Notice your breath. You don\'t need to change it.</item>
+        <item>Let your hands grow heavy.</item>
+        <item>Feel the bed holding you up.</item>
+        <item>Nothing to do now. Nothing to fix.</item>
+        <item>Let the day go.</item>
+    </string-array>
 
     <!-- Notifications -->
     <string name="channel_watcher">Standby mode</string>

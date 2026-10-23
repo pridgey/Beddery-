@@ -15,13 +15,19 @@ class SaversTest {
 
     @Test fun refinedVersionsPointAtRealOriginals() {
         val refined = Savers.all.filter { it.refined }
-        assertEquals(8, refined.size)
+        assertEquals(1, refined.size)
         refined.forEach { r ->
             val original = assertNotNull(Savers.findOrNull(r.variantOf)).let { Savers.find(r.variantOf) }
             assertEquals(original.category, r.category)
             assertEquals(original.id, Savers.counterpart(r.id)?.id)
             assertEquals(r.id, Savers.counterpart(original.id)?.id)
         }
+    }
+
+    @Test fun retiredIdsStillResolve() {
+        assertEquals("ocean", Savers.find("ocean_refined").id)
+        assertEquals("constellation", Savers.find("constellation_refined").id)
+        assertEquals("lava", Savers.find("lava_refined").id)
     }
 
     @Test fun refinedSitsRightAfterItsOriginalForSwipeComparison() {

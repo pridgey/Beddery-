@@ -39,6 +39,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.ui.res.pluralStringResource
+import dev.pridgey.beddery.savers.Savers
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ErrorOutline
@@ -93,13 +96,14 @@ import java.time.LocalTime
 import kotlin.math.roundToInt
 
 @Composable
-fun SettingsTab(settings: AppSettings, viewModel: MainViewModel, padding: PaddingValues) {
+fun SettingsTab(settings: AppSettings, viewModel: MainViewModel, padding: PaddingValues, onOpenGallery: () -> Unit = {}) {
     LazyColumn(contentPadding = padding + PaddingValues(bottom = 24.dp)) {
         item { LaunchSection(settings, viewModel) }
-        item { DisplaySection(settings, viewModel) }
+        item { ShownSection(settings, viewModel, onOpenGallery) }
+        item { LookSection(settings, viewModel) }
+        item { WhileShowingSection(settings, viewModel) }
         item { NotificationsSection(settings, viewModel) }
         item { NightSection(settings, viewModel) }
-        item { ShuffleSection(settings, viewModel) }
         item { AboutSection() }
     }
 }
@@ -114,255 +118,6 @@ fun Context.tryStart(intent: Intent): Boolean = try {
 
 private val itemColors @Composable get() = ListItemDefaults.colors(containerColor = Color.Transparent)
 
-// ---------------------------------------------------------------- How it starts
-
-@Composable
-private fun LaunchSection(settings: AppSettings, viewModel: MainViewModel) {
-    val context = LocalContext.current
-    var dream by remember { mutableStateOf(LaunchStatus.dream(context)) }
-    var standby by remember { mutableStateOf(LaunchStatus.standby(context)) }
-    var comparing by rememberSaveable { mutableStateOf(false) }
-    LifecycleResumeEffect(Unit) {
-        dream = LaunchStatus.dream(context)
-        standby = LaunchStatus.standby(context)
-        onPauseOrDispose { }
-    }
-    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        standby = LaunchStatus.standby(context)
-    }
-    // Android's own screensaver is the better default wherever the phone still has it.
-    val recommendDream = dream.available
-    val openDreamSettings = {
-        viewModel.update { it.copy(onboardingDone = true) }
-        context.tryStart(LaunchStatus.dreamSettingsIntent())
-    }
-
-    SectionHeader(stringResource(R.string.section_launch))
-    Column(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 8.dp)) {
-        Text(
-            stringResource(R.string.launch_intro), style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        TextButton(onClick = { comparing = true }, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp)) {
-            Icon(Icons.AutoMirrored.Rounded.HelpOutline, null, Modifier.size(18.dp))
-            Spacer(Modifier.width(6.dp))
-            Text(stringResource(R.string.launch_compare))
-        }
-    }
-    SettingsGroup {
-        // Android's own screensaver
-        val dreamText = when {
-            !dream.available -> stringResource(R.string.dream_unavailable)
-            dream.selected == true && dream.whileCharging == true -> stringResource(R.string.dream_ready)
-            dream.selected == true -> stringResource(R.string.dream_selected_check_charging)
-            else -> stringResource(R.string.dream_instructions)
-        }
-        ListItem(
-            colors = itemColors,
-            headlineContent = { TitleWithPill(stringResource(R.string.dream_title), recommendDream) },
-            supportingContent = { Text(dreamText) },
-            leadingContent = {
-                StatusIcon(
-                    when {
-                        !dream.available -> StatusKind.Off
-                        dream.selected == true && dream.whileCharging != false -> StatusKind.Good
-                        else -> StatusKind.Info
-                    },
-                )
-            },
-            trailingContent = if (dream.available) {
-                { TextButton(onClick = { openDreamSettings() }) { Text(stringResource(R.string.action_open)) } }
-            } else null,
-        )
-        HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-        // Standby mode
-        ListItem(
-            colors = itemColors,
-            modifier = Modifier.clickable(role = Role.Switch) { toggleStandby(!settings.standbyEnabled, standby, viewModel, notificationPermission::launch) },
-            headlineContent = { TitleWithPill(stringResource(R.string.standby_title), !recommendDream) },
-            supportingContent = {
-                Text(stringResource(R.string.standby_desc))
-            },
-            leadingContent = { StatusIcon(if (settings.standbyEnabled && standby.ready) StatusKind.Good else if (settings.standbyEnabled) StatusKind.Warning else StatusKind.Off) },
-            trailingContent = {
-                Switch(
-                    checked = settings.standbyEnabled,
-                    onCheckedChange = { toggleStandby(it, standby, viewModel, notificationPermission::launch) },
-                )
-            },
-        )
-        AnimatedVisibility(settings.standbyEnabled) {
-            Column {
-                if (!standby.notificationsAllowed) {
-                    FixRow(stringResource(R.string.fix_notifications), stringResource(R.string.action_allow)) {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-                        else context.tryStart(LaunchStatus.appNotificationSettingsIntent(context))
-                    }
-                }
-                if (!standby.fullScreenAllowed) {
-                    FixRow(stringResource(R.string.fix_full_screen), stringResource(R.string.action_allow)) {
-                        context.tryStart(LaunchStatus.fullScreenSettingsIntent(context))
-                    }
-                }
-                if (!standby.batteryUnrestricted) {
-                    FixRow(stringResource(R.string.fix_battery), stringResource(R.string.action_open), optional = true) {
-                        context.tryStart(LaunchStatus.batterySettingsIntent())
-                    }
-                }
-                SwitchRow(stringResource(R.string.standby_on_plug), settings.standbyOnPlugIn) { v -> viewModel.update { it.copy(standbyOnPlugIn = v) } }
-                SwitchRow(stringResource(R.string.standby_on_lock), settings.standbyOnScreenOff, stringResource(R.string.standby_on_lock_desc)) { v ->
-                    viewModel.update { it.copy(standbyOnScreenOff = v) }
-                }
-                ListItem(
-                    colors = itemColors,
-                    headlineContent = { Text(stringResource(R.string.standby_orientation)) },
-                    supportingContent = {
-                        Choice(
-                            options = StandbyOrientation.entries,
-                            selected = settings.standbyOrientation,
-                            label = {
-                                stringResource(
-                                    when (it) {
-                                        StandbyOrientation.AUTO -> R.string.orientation_auto
-                                        StandbyOrientation.PORTRAIT -> R.string.orientation_portrait
-                                        StandbyOrientation.LANDSCAPE -> R.string.orientation_landscape
-                                    },
-                                )
-                            },
-                            modifier = Modifier.padding(top = 8.dp),
-                        ) { v -> viewModel.update { it.copy(standbyOrientation = v) } }
-                    },
-                )
-            }
-        }
-        if (dream.selected == true && settings.standbyEnabled) {
-            FixRow(stringResource(R.string.launch_both_on), stringResource(R.string.launch_compare), optional = true) { comparing = true }
-        }
-        HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-        SwitchRow(stringResource(R.string.standby_double_tap), settings.doubleTapToExit, stringResource(R.string.standby_double_tap_desc)) { v ->
-            viewModel.update { it.copy(doubleTapToExit = v) }
-        }
-    }
-
-    if (comparing) {
-        CompareSheet(
-            dreamAvailable = dream.available,
-            onDismiss = { comparing = false },
-            onSetupDream = {
-                comparing = false
-                openDreamSettings()
-            },
-            onSetupStandby = {
-                comparing = false
-                if (!settings.standbyEnabled) toggleStandby(true, standby, viewModel, notificationPermission::launch)
-            },
-        )
-    }
-}
-
-@Composable
-private fun TitleWithPill(title: String, recommended: Boolean) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(title)
-        if (recommended) {
-            Spacer(Modifier.width(8.dp))
-            Text(
-                stringResource(R.string.badge_recommended),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(50))
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .padding(horizontal = 8.dp, vertical = 2.dp),
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CompareSheet(dreamAvailable: Boolean, onDismiss: () -> Unit, onSetupDream: () -> Unit, onSetupStandby: () -> Unit) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            Modifier
-                .verticalScroll(rememberScrollState())
-                .padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
-        ) {
-            Text(stringResource(R.string.compare_title), style = MaterialTheme.typography.headlineSmall)
-            Spacer(Modifier.height(6.dp))
-            Text(stringResource(R.string.compare_subtitle), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(24.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                CompareHeading(Icons.Rounded.Bedtime, stringResource(R.string.dream_title), Modifier.weight(1f))
-                CompareHeading(Icons.Rounded.Power, stringResource(R.string.standby_short), Modifier.weight(1f))
-            }
-            listOf(
-                Triple(R.string.compare_row_starts, R.string.compare_dream_starts, R.string.compare_standby_starts),
-                Triple(R.string.compare_row_setup, R.string.compare_dream_setup, R.string.compare_standby_setup),
-                Triple(R.string.compare_row_works, R.string.compare_dream_works, R.string.compare_standby_works),
-                Triple(R.string.compare_row_background, R.string.compare_dream_background, R.string.compare_standby_background),
-            ).forEach { (label, a, b) ->
-                HorizontalDivider(Modifier.padding(vertical = 14.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                Text(stringResource(label), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.height(6.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text(stringResource(a), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                    Text(stringResource(b), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                }
-            }
-            Spacer(Modifier.height(24.dp))
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .padding(20.dp),
-            ) {
-                Text(stringResource(R.string.compare_pick), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    stringResource(if (dreamAvailable) R.string.compare_pick_dream else R.string.compare_pick_standby),
-                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-                Spacer(Modifier.height(16.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (dreamAvailable) {
-                        Button(onClick = onSetupDream) { Text(stringResource(R.string.compare_setup_dream)) }
-                        OutlinedButton(onClick = onSetupStandby) { Text(stringResource(R.string.compare_setup_standby)) }
-                    } else {
-                        Button(onClick = onSetupStandby) { Text(stringResource(R.string.compare_setup_standby)) }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CompareHeading(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, modifier: Modifier) {
-    Column(modifier) {
-        Box(
-            Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer),
-            contentAlignment = Alignment.Center,
-        ) { Icon(icon, null, tint = MaterialTheme.colorScheme.onSecondaryContainer) }
-        Spacer(Modifier.height(8.dp))
-        Text(title, style = MaterialTheme.typography.titleSmall)
-    }
-}
-
-private fun toggleStandby(
-    enable: Boolean,
-    status: dev.pridgey.beddery.system.StandbyStatus,
-    viewModel: MainViewModel,
-    requestNotifications: (String) -> Unit,
-) {
-    viewModel.setStandbyEnabled(enable)
-    if (enable && !status.notificationsAllowed && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        requestNotifications(Manifest.permission.POST_NOTIFICATIONS)
-    }
-}
-
 private enum class StatusKind { Good, Info, Warning, Off }
 
 @Composable
@@ -374,25 +129,6 @@ private fun StatusIcon(kind: StatusKind) {
         StatusKind.Off -> Icons.Rounded.Info to MaterialTheme.colorScheme.outline
     }
     Icon(icon, null, tint = tint)
-}
-
-@Composable
-private fun FixRow(text: String, action: String, optional: Boolean = false, onClick: () -> Unit) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
-            .clip(MaterialTheme.shapes.large)
-            .background(if (optional) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.errorContainer)
-            .padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f),
-            color = if (optional) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onErrorContainer,
-        )
-        TextButton(onClick = onClick) { Text(action) }
-    }
 }
 
 @Composable
@@ -424,8 +160,8 @@ fun <T> Choice(options: List<T>, selected: T, label: @Composable (T) -> String, 
 // ---------------------------------------------------------------- Display
 
 @Composable
-private fun DisplaySection(settings: AppSettings, viewModel: MainViewModel) {
-    SectionHeader(stringResource(R.string.section_display))
+private fun LookSection(settings: AppSettings, viewModel: MainViewModel) {
+    SectionHeader(stringResource(R.string.section_look))
     SettingsGroup {
         ListItem(
             colors = itemColors,
@@ -471,11 +207,44 @@ private fun DisplaySection(settings: AppSettings, viewModel: MainViewModel) {
                 },
             )
         }
+    }
+}
+
+@Composable
+private fun WhileShowingSection(settings: AppSettings, viewModel: MainViewModel) {
+    SectionHeader(stringResource(R.string.section_while_showing))
+    SettingsGroup {
+        SwitchRow(stringResource(R.string.standby_double_tap), settings.doubleTapToExit, stringResource(R.string.standby_double_tap_desc)) { v ->
+            viewModel.update { it.copy(doubleTapToExit = v) }
+        }
         SwitchRow(stringResource(R.string.clock_overlay), settings.showClockOverlay, stringResource(R.string.clock_overlay_desc)) { v ->
             viewModel.update { it.copy(showClockOverlay = v) }
         }
         SwitchRow(stringResource(R.string.burn_in), settings.burnInProtection, stringResource(R.string.burn_in_desc)) { v ->
             viewModel.update { it.copy(burnInProtection = v) }
+        }
+        // Android decides the screensaver's orientation; Standby can choose.
+        if (settings.standbyEnabled) {
+            ListItem(
+                colors = itemColors,
+                headlineContent = { Text(stringResource(R.string.standby_orientation)) },
+                supportingContent = {
+                    Choice(
+                        options = StandbyOrientation.entries,
+                        selected = settings.standbyOrientation,
+                        label = {
+                            stringResource(
+                                when (it) {
+                                    StandbyOrientation.AUTO -> R.string.orientation_auto
+                                    StandbyOrientation.PORTRAIT -> R.string.orientation_portrait
+                                    StandbyOrientation.LANDSCAPE -> R.string.orientation_landscape
+                                },
+                            )
+                        },
+                        modifier = Modifier.padding(top = 8.dp),
+                    ) { v -> viewModel.update { it.copy(standbyOrientation = v) } }
+                },
+            )
         }
     }
 }
@@ -645,9 +414,25 @@ fun NotificationSettings(settings: AppSettings, viewModel: MainViewModel) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ShuffleSection(settings: AppSettings, viewModel: MainViewModel) {
-    SectionHeader(stringResource(R.string.section_shuffle))
+private fun ShownSection(settings: AppSettings, viewModel: MainViewModel, onOpenGallery: () -> Unit) {
+    SectionHeader(stringResource(R.string.section_shown))
     SettingsGroup {
+        val current = Savers.find(settings.selectedSaverId)
+        ListItem(
+            colors = itemColors,
+            modifier = Modifier.clickable(onClick = onOpenGallery),
+            leadingContent = { Icon(current.icon, null, tint = MaterialTheme.colorScheme.primary) },
+            headlineContent = {
+                Text(
+                    if (settings.shuffleEnabled) {
+                        val count = settings.shuffleIds.count { Savers.findOrNull(it) != null }.takeIf { it > 0 } ?: Savers.all.size
+                        pluralStringResource(R.plurals.shown_shuffling, count, count)
+                    } else saverName(current),
+                )
+            },
+            supportingContent = { Text(stringResource(R.string.shown_change)) },
+            trailingContent = { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null) },
+        )
         SwitchRow(stringResource(R.string.shuffle), settings.shuffleEnabled, stringResource(R.string.shuffle_desc)) { v ->
             viewModel.update { it.copy(shuffleEnabled = v) }
         }
@@ -680,18 +465,12 @@ private fun ShuffleSection(settings: AppSettings, viewModel: MainViewModel) {
 
 @Composable
 private fun AboutSection() {
-    val context = LocalContext.current
     SectionHeader(stringResource(R.string.section_about))
     SettingsGroup {
         ListItem(
             colors = itemColors,
             headlineContent = { Text(stringResource(R.string.app_name)) },
             supportingContent = { Text(stringResource(R.string.about_version, BuildConfig.VERSION_NAME)) },
-            trailingContent = {
-                OutlinedButton(onClick = { context.startActivity(StandbyActivity.intent(context, preview = true)) }) {
-                    Text(stringResource(R.string.action_preview))
-                }
-            },
         )
         Text(
             stringResource(R.string.about_weather_credit),

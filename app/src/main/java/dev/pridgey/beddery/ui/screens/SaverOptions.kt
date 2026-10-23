@@ -73,9 +73,10 @@ fun SaverOptions(saverId: String, settings: AppSettings, viewModel: MainViewMode
             "weather" -> WeatherOptions(settings, viewModel)
             "agenda", "month" -> CalendarOptions()
             "notifications" -> NotificationSettings(settings, viewModel)
+            "pendulum" -> PendulumOptions(settings, viewModel)
             "photos" -> PhotoOptions(settings, viewModel)
             "world" -> WorldClockOptions(settings, viewModel)
-            "breathe" -> BreatheOptions(settings, viewModel)
+            "breathe", "breathe_refined", "tide" -> BreatheOptions(settings, viewModel)
         }
     }
 }
@@ -396,6 +397,38 @@ private fun BreatheOptions(settings: AppSettings, viewModel: MainViewModel) {
                     ),
                     style = MaterialTheme.typography.bodySmall,
                 )
+            }
+        },
+    )
+}
+
+// ---------------------------------------------------------------- Pendulum wave
+
+private val PendulumSpeeds = listOf(0.5f, 1f, 1.6f)
+
+@Composable
+private fun PendulumOptions(settings: AppSettings, viewModel: MainViewModel) {
+    val selected = PendulumSpeeds.minByOrNull { kotlin.math.abs(it - settings.pendulumSpeed) } ?: 1f
+    ListItem(
+        colors = clear,
+        headlineContent = { Text(stringResource(R.string.pendulum_speed)) },
+        supportingContent = {
+            Column {
+                Choice(
+                    PendulumSpeeds, selected,
+                    label = {
+                        stringResource(
+                            when (it) {
+                                0.5f -> R.string.speed_slow
+                                1f -> R.string.speed_normal
+                                else -> R.string.speed_fast
+                            },
+                        )
+                    },
+                    modifier = Modifier.padding(top = 8.dp),
+                ) { v -> viewModel.update { it.copy(pendulumSpeed = v) } }
+                Spacer(Modifier.size(8.dp))
+                Text(stringResource(R.string.pendulum_speed_desc), style = MaterialTheme.typography.bodySmall)
             }
         },
     )

@@ -296,7 +296,9 @@ fun WeatherSaver(ctx: SaverContext) {
         val body = with(density) { (unitSize * 0.045f).toSp() }
 
         val weatherBlock: @Composable () -> Unit = {
-            when (val s = state) {
+            // Previews always show a forecast, even before a location is chosen.
+            val shown = state.let { if (ctx.demo && it !is WeatherState.Ready) WeatherState.Ready(SampleWeather, sample = true) else it }
+            when (val s = shown) {
                 WeatherState.NoLocation -> Message(stringResource(R.string.weather_no_location), body)
                 WeatherState.Loading -> Message(stringResource(R.string.weather_loading), body)
                 WeatherState.Error -> Message(stringResource(R.string.weather_error), body)
@@ -409,7 +411,10 @@ fun AgendaSaver(ctx: SaverContext) {
         val body = with(density) { (unit * 0.048f).toSp() }
         val list: @Composable (Modifier) -> Unit = { m ->
             Column(m, verticalArrangement = Arrangement.spacedBy(unit * 0.03f)) {
-                when (val s = state) {
+                val shown = state.let {
+                    if (ctx.demo && (it is AgendaState.NoPermission || (it is AgendaState.Ready && it.events.isEmpty()))) AgendaState.Ready(sampleEvents(), true) else it
+                }
+                when (val s = shown) {
                     AgendaState.NoPermission -> Message(stringResource(R.string.agenda_no_permission), body)
                     is AgendaState.Ready -> if (s.events.isEmpty()) {
                         Message(stringResource(R.string.agenda_empty), body)
