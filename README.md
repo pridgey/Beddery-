@@ -53,9 +53,12 @@ which makes visual review easy.
 
 ## CI
 
-`.github/workflows/build.yml` runs lint, the tests and builds debug + release APKs on every push and PR.
-APKs (and screenshots) are attached to each run as artifacts. Pushing a tag like `v1.2.0` also publishes
-a GitHub Release with the release APK.
+`.github/workflows/build.yml` runs lint and the tests, then builds debug + release APKs on every push and PR.
+APKs (and screenshots) are attached to each run as artifacts.
+
+Every push to `main` also publishes a GitHub Release (`v1.0.<run number>`) with the release APK, so the
+latest build is always at **Releases → Latest**. Pull requests only build. You can still push a tag like
+`v2.0.0` to release with a specific version.
 
 ### Release signing (optional)
 
