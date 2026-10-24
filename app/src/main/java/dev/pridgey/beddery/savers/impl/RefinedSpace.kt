@@ -151,7 +151,8 @@ private fun DrawScope.drawNebula(a: TextureBrush, b: TextureBrush, t: Float) {
 private fun DrawScope.drawSun(c: Offset, r: Float, corona: TextureBrush, t: Float) {
     drawCircle(Brush.radialGradient(listOf(Color(0xFFFF9A3C).copy(alpha = 0.12f), Color.Transparent), c, r * 10f), r * 10f, c)
     // Turbulent corona: noise spun slowly and faded out from the edge of the disc.
-    layer(Rect(c, r * 4.2f)) {
+    // The layer sits just inside the rectangles drawn into it, so no edge pixels are left half-masked.
+    layer(Rect(c, r * 4.2f).deflate(2f)) {
         drawRect(
             corona.place(r * 3f, r * 3f, c.x, c.y, degrees = t * 1.5f, pivotX = c.x, pivotY = c.y),
             topLeft = c - Offset(r * 4.2f, r * 4.2f), size = Size(r * 8.4f, r * 8.4f),

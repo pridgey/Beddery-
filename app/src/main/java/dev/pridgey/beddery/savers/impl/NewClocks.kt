@@ -308,7 +308,7 @@ private fun DrawScope.tube(l: NixieLayouts, p: Offset, digit: Int, previous: Int
             if (lit && d == digit && fade > 0.99f) continue
             val layout = l.digits[d]
             val o = Offset(center.x - layout.size.width / 2f + (d % 3 - 1) * w * 0.01f, center.y - layout.size.height / 2f)
-            drawText(layout, color = Color(0xFF3B2C1F), topLeft = o, alpha = 0.22f)
+            drawText(layout, color = Color(0xFF3B2C1F), topLeft = o, alpha = 0.09f)
         }
         if (lit) {
             val flicker = if (fade < 1f) (0.6f + 0.4f * sin(fade * 40f)).coerceIn(0f, 1f) * fade else 1f
@@ -408,7 +408,9 @@ fun OdometerSaver(ctx: SaverContext) {
     BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         val landscape = maxWidth > maxHeight
         val small = with(LocalDensity.current) { (minOf(maxWidth, maxHeight) * 0.04f).toSp() }
-        val unitDp = if (landscape) maxHeight * 0.36f else maxWidth * 0.235f
+        // Without seconds the four drums can be a little larger.
+        val big = if (ctx.settings.odometerSeconds) 1f else 1.25f
+        val unitDp = (if (landscape) maxHeight * 0.36f else maxWidth * 0.235f) * big
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Canvas(Modifier.fillMaxWidth().height(unitDp * 1.1f)) {
                 val unit = unitDp.toPx()
@@ -417,18 +419,20 @@ fun OdometerSaver(ctx: SaverContext) {
                 val gap = dw * 0.08f
                 val sep = dw * 0.36f
                 val secScale = 0.62f
-                val total = dw * 4 + gap * 2 + sep * 2 + dw * secScale * 2 + gap
+                val showSeconds = ctx.settings.odometerSeconds
+                val count = if (showSeconds) 6 else 4
+                val total = if (showSeconds) dw * 4 + gap * 2 + sep * 2 + dw * secScale * 2 + gap else dw * 4 + gap * 2 + sep
                 var x = (size.width - total) / 2
                 val y = (size.height - dh) / 2
                 val style = TextStyle(fontSize = (dh * 0.62f).toSp(), fontWeight = FontWeight.Light, color = Color(0xFFEDEDEF), fontFeatureSettings = "tnum")
                 val secStyle = style.copy(fontSize = (dh * secScale * 0.62f).toSp(), color = accent)
-                for (i in 0 until 6) {
+                for (i in 0 until count) {
                     val sec = i >= 4
                     val w = if (sec) dw * secScale else dw
                     val hh = if (sec) dh * secScale else dh
                     drum(measurer, if (sec) secStyle else style, Offset(x, y + (dh - hh)), w, hh, drums[i].value)
                     x += w + if (i == 1 || i == 3) sep else gap
-                    if (i == 1 || i == 3) {
+                    if (i == 1 || (i == 3 && showSeconds)) {
                         val cxp = x - sep / 2 - gap / 2
                         drawCircle(Color.White.copy(alpha = 0.35f), dw * 0.045f, Offset(cxp, y + dh * 0.36f))
                         drawCircle(Color.White.copy(alpha = 0.35f), dw * 0.045f, Offset(cxp, y + dh * 0.64f))

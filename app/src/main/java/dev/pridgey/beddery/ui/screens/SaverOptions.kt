@@ -60,6 +60,7 @@ import dev.pridgey.beddery.data.CalendarRepository
 import dev.pridgey.beddery.data.TempUnit
 import dev.pridgey.beddery.data.WeatherLocation
 import dev.pridgey.beddery.data.WeatherRepository
+import dev.pridgey.beddery.savers.impl.CatCoat
 import dev.pridgey.beddery.savers.impl.cityName
 import kotlinx.coroutines.launch
 import java.time.ZoneId
@@ -74,6 +75,8 @@ fun SaverOptions(saverId: String, settings: AppSettings, viewModel: MainViewMode
             "agenda", "month" -> CalendarOptions()
             "notifications" -> NotificationSettings(settings, viewModel)
             "pendulum" -> PendulumOptions(settings, viewModel)
+            "orb" -> OrbOptions(settings, viewModel)
+            "odometer" -> SwitchRow(stringResource(R.string.odometer_seconds), settings.odometerSeconds) { v -> viewModel.update { it.copy(odometerSeconds = v) } }
             "photos" -> PhotoOptions(settings, viewModel)
             "world" -> WorldClockOptions(settings, viewModel)
             "breathe", "breathe_refined", "tide" -> BreatheOptions(settings, viewModel)
@@ -82,6 +85,35 @@ fun SaverOptions(saverId: String, settings: AppSettings, viewModel: MainViewMode
 }
 
 private val clear @Composable get() = ListItemDefaults.colors(containerColor = Color.Transparent)
+
+// ---------------------------------------------------------------- The Orb
+
+@Composable
+private fun OrbOptions(settings: AppSettings, viewModel: MainViewModel) {
+    val coats = CatCoat.entries
+    val selected = coats.firstOrNull { it.key == settings.orbCat } ?: CatCoat.Ginger
+    ListItem(
+        colors = clear,
+        headlineContent = { Text(stringResource(R.string.orb_cat)) },
+        supportingContent = {
+            Choice(
+                coats, selected,
+                label = {
+                    stringResource(
+                        when (it) {
+                            CatCoat.Ginger -> R.string.cat_ginger
+                            CatCoat.Grey -> R.string.cat_grey
+                            CatCoat.Black -> R.string.cat_black
+                            CatCoat.White -> R.string.cat_white
+                            CatCoat.Calico -> R.string.cat_calico
+                        },
+                    )
+                },
+                modifier = Modifier.padding(top = 8.dp),
+            ) { v -> viewModel.update { it.copy(orbCat = v.key) } }
+        },
+    )
+}
 
 // ---------------------------------------------------------------- Weather
 

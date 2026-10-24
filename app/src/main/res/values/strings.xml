@@ -246,15 +246,15 @@
     <string name="saver_rain">Rain on Glass</string>
     <string name="saver_rain_desc">Raindrops gather and trickle down a window, with the city\'s lights glowing softly beyond.</string>
     <string name="saver_campfire">Campfire</string>
-    <string name="saver_campfire_desc">A crackling fire under the stars, with embers drifting up into the night.</string>
+    <string name="saver_campfire_desc">A campfire in a clearing by a mountain lake, with a tent, a lantern and sparks drifting up past the pines. Tap to stoke the fire.</string>
     <string name="saver_candle">Candle</string>
-    <string name="saver_candle_desc">A single flickering candle in a dark room. About as calm as it gets.</string>
+    <string name="saver_candle_desc">Three candles at an open window on a summer night, with a curtain stirring in the breeze and fireflies outside. Tap to breathe on the flames.</string>
     <string name="saver_snow">Snowfall</string>
     <string name="saver_snow_desc">Snow falls over a pine forest at night, and a cabin window glows warm in the distance.</string>
     <string name="saver_koi">Koi Pond</string>
-    <string name="saver_koi_desc">Rain dimples a moonlit pond while a koi drifts beneath the lily pads.</string>
+    <string name="saver_koi_desc">Looking down into a moonlit pond as five koi circle beneath a white lotus and drifting maple leaves. Tap to send out a ripple.</string>
     <string name="saver_jellyfish">Jellyfish</string>
-    <string name="saver_jellyfish_desc">Glowing jellyfish pulse slowly through the deep, trailing their tentacles.</string>
+    <string name="saver_jellyfish_desc">A moon jelly and an amber sea nettle climb and sink through deep blue water, ghosts drift far off, and now and then a far jelly glows in colour. Tap for a flash of light.</string>
     <string name="saver_colorfield">Color Field</string>
     <string name="saver_colorfield_desc">Soft fields of color drift and blend. The palette changes every few minutes.</string>
     <string name="saver_flow">Flow Field</string>
@@ -429,7 +429,7 @@
     <string name="saver_countdown">Count Down</string>
     <string name="saver_countdown_desc">Numbers slowly counting down from 100, one per long breath out. A classic way to drift off.</string>
     <string name="saver_orb">The Orb</string>
-    <string name="saver_orb_desc">A giant LED sphere over the city. It looks around, blinks, turns into an eyeball or the moon, and nods off at bedtime.</string>
+    <string name="saver_orb_desc">A giant LED globe over a desert city, mirrored in a lake. A smiley that watches passing planes and cars, the moon, a cat, the earth, a snooze and fireworks. Tap for the next show.</string>
     <string name="saver_contours">Contours</string>
     <string name="saver_contours_desc">Topographic lines over a landscape that slowly shifts and reshapes itself.</string>
     <string name="saver_ridgelines">Ridgelines</string>
@@ -439,6 +439,13 @@
     <string name="coach_until">until your %1$s alarm</string>
     <string name="coach_goal">8h goal</string>
     <string name="pendulum_speed">Speed</string>
+    <string name="odometer_seconds">Show seconds</string>
+    <string name="orb_cat">Cat coat</string>
+    <string name="cat_ginger">Ginger</string>
+    <string name="cat_grey">Grey tabby</string>
+    <string name="cat_black">Black</string>
+    <string name="cat_white">White</string>
+    <string name="cat_calico">Calico</string>
     <string name="pendulum_speed_desc">At normal speed, the pendulums line up again every minute.</string>
     <string name="speed_slow">Slow</string>
     <string name="speed_normal">Normal</string>
@@ -516,16 +523,16 @@
     <string name="sky_estimated">Estimated location · set one in Weather for accuracy</string>
 
     <string name="saver_lighthouse">Lighthouse</string>
-    <string name="saver_lighthouse_desc">A lighthouse on a headland, its beam sweeping slowly across a dark sea at a calm breathing pace.</string>
+    <string name="saver_lighthouse_desc">A lighthouse on a moonlit headland, its beam sweeping round every 14 seconds above the keeper\'s cottage. Tap to send a boat across.</string>
 
     <string name="saver_train">Sleeper Train</string>
-    <string name="saver_train_desc">The view from a night train: moonlit hills, sleeping villages and the odd station drifting past the window.</string>
+    <string name="saver_train_desc">The view from a sleeper compartment: a moonlit lake, a viaduct, villages and forest sliding past at their own speeds. Tap to rattle over the points.</string>
 
     <string name="saver_cat">Sleeping Cat</string>
     <string name="saver_cat_desc">A cat curled up asleep on a blanket, breathing slowly. Tap and an ear might twitch.</string>
 
     <string name="saver_aquarium">Aquarium</string>
-    <string name="saver_aquarium_desc">A small planted tank of tropical fish. Late at night the light turns moonlit blue and the fish settle down to rest.</string>
+    <string name="saver_aquarium_desc">Your screen is the glass of a planted tank: stone and driftwood, neon tetras, cherry shrimp, a toy diver, and now and then a showpiece fish. Tap to call one over.</string>
 
     <string name="saver_hourglass">Hourglass</string>
     <string name="saver_hourglass_desc">Sand that drains through an hourglass over each hour, piling up below, then turns over on the hour.</string>

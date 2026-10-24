@@ -69,6 +69,8 @@ class SettingsRepository private constructor(context: Context) {
         val worldZones = stringPreferencesKey("world_zones")
         val breath = stringPreferencesKey("breath")
         val pendulum = floatPreferencesKey("pendulum_speed")
+        val odometerSeconds = booleanPreferencesKey("odometer_seconds")
+        val orbCat = stringPreferencesKey("orb_cat")
         val onboarded = booleanPreferencesKey("onboarded")
     }
 
@@ -109,6 +111,8 @@ class SettingsRepository private constructor(context: Context) {
             worldZones = p[Keys.worldZones]?.split(',')?.filter { it.isNotBlank() } ?: d.worldZones,
             breathPattern = p[Keys.breath].toEnum(d.breathPattern),
             pendulumSpeed = p[Keys.pendulum] ?: d.pendulumSpeed,
+            odometerSeconds = p[Keys.odometerSeconds] ?: d.odometerSeconds,
+            orbCat = p[Keys.orbCat] ?: d.orbCat,
             onboardingDone = p[Keys.onboarded] ?: d.onboardingDone,
         )
     }
@@ -154,6 +158,8 @@ class SettingsRepository private constructor(context: Context) {
         p[Keys.worldZones] = s.worldZones.joinToString(",")
         p[Keys.breath] = s.breathPattern.name
         p[Keys.pendulum] = s.pendulumSpeed
+        p[Keys.odometerSeconds] = s.odometerSeconds
+        p[Keys.orbCat] = s.orbCat
         p[Keys.onboarded] = s.onboardingDone
     }
 

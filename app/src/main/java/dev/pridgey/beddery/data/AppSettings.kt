@@ -81,6 +81,10 @@ data class AppSettings(
     val breathPattern: BreathPattern = BreathPattern.BOX,
     /** Pendulum Wave speed multiplier. */
     val pendulumSpeed: Float = 1f,
+    /** Odometer shows a seconds pair. */
+    val odometerSeconds: Boolean = true,
+    /** The Orb's cat show: ginger, grey, black, white or calico. */
+    val orbCat: String = "ginger",
 
     val onboardingDone: Boolean = false,
 ) {

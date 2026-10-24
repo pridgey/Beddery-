@@ -234,7 +234,6 @@ class Comet {
     private var duration = 16f
     private var angle = 0f
     private var flip = 1f
-    private val trail = ArrayDeque<Offset>()
 
     val active get() = age >= 0f
 
@@ -244,7 +243,6 @@ class Comet {
         duration = 14f + r.nextFloat() * 6f
         angle = r.nextFloat() * TAU
         flip = if (r.nextBoolean()) 1f else -1f
-        trail.clear()
     }
 
     /** Position relative to the sun in units of the system radius, for progress s in -1..1. */
@@ -262,7 +260,6 @@ class Comet {
         age += dt
         if (age > duration) {
             age = -1f
-            trail.clear()
         }
     }
 
@@ -273,16 +270,9 @@ class Comet {
         val s = sin((p - 0.5f) * PI.toFloat()) * 1f
         val rel = position(s)
         val head = Offset(sun.x + rel.x * scale, sun.y + rel.y * scale * tilt)
-        trail.addLast(head)
-        if (trail.size > 70) trail.removeFirst()
         val dist = rel.length().coerceAtLeast(0.08f)
         val fade = (sin(p * PI.toFloat()) * 1.4f).coerceIn(0f, 1f)
         val unit = size.minDimension
-        // Dust tail: a faint wisp along the path it just travelled.
-        trail.forEachIndexed { i, pt ->
-            val k = i / trail.size.toFloat()
-            drawCircle(Color(0xFFFFE9C4).copy(alpha = 0.035f * k * fade), unit * 0.0025f * k, pt, blendMode = BlendMode.Plus)
-        }
         // Ion tail: a fine streak pointing away from the sun, a little longer when close.
         val away = (head - sun).let { it / it.length().coerceAtLeast(1f) }
         val tailLen = unit * (0.04f + 0.05f / (dist * 3f)).coerceAtMost(unit * 0.12f)

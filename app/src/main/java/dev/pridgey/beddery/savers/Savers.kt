@@ -76,16 +76,16 @@ import dev.pridgey.beddery.savers.impl.AgendaSaver
 import dev.pridgey.beddery.savers.impl.SunriseSaver
 import dev.pridgey.beddery.savers.impl.WeatherWindowSaver
 import dev.pridgey.beddery.savers.impl.SkyTonightSaver
-import dev.pridgey.beddery.savers.impl.LighthouseSaver
-import dev.pridgey.beddery.savers.impl.TrainSaver
+import dev.pridgey.beddery.savers.impl.SceneLighthouseSaver
+import dev.pridgey.beddery.savers.impl.SceneTrainSaver
 import dev.pridgey.beddery.savers.impl.SleepingCatSaver
-import dev.pridgey.beddery.savers.impl.AquariumSaver
+import dev.pridgey.beddery.savers.impl.SceneAquariumSaver
 import dev.pridgey.beddery.savers.impl.HourglassSaver
 import dev.pridgey.beddery.savers.impl.TinyRoomSaver
 import dev.pridgey.beddery.savers.impl.BlockClockSaver
 import dev.pridgey.beddery.savers.impl.RidgelinesSaver
 import dev.pridgey.beddery.savers.impl.ContoursSaver
-import dev.pridgey.beddery.savers.impl.OrbSaver
+import dev.pridgey.beddery.savers.impl.SceneOrbSaver
 import dev.pridgey.beddery.savers.impl.CountDownSaver
 import dev.pridgey.beddery.savers.impl.WindDownSaver
 import dev.pridgey.beddery.savers.impl.TideSaver
@@ -116,7 +116,7 @@ import dev.pridgey.beddery.savers.impl.FlipClockSaver
 import dev.pridgey.beddery.savers.impl.FlowFieldSaver
 import dev.pridgey.beddery.savers.impl.GameOfLifeSaver
 import dev.pridgey.beddery.savers.impl.HarmonographSaver
-import dev.pridgey.beddery.savers.impl.JellyfishSaver
+import dev.pridgey.beddery.savers.impl.SceneJellyfishSaver
 import dev.pridgey.beddery.savers.impl.KoiPondSaver
 import dev.pridgey.beddery.savers.impl.LavaLampSaver
 import dev.pridgey.beddery.savers.impl.MatrixSaver
@@ -184,7 +184,7 @@ object Savers {
         Saver("flip", R.string.saver_flip, R.string.saver_flip_desc, C, Icons.Rounded.Tv, true, showsNotifications = true) { FlipClockSaver(it) },
         Saver("classic", R.string.saver_classic, R.string.saver_classic_desc, C, Icons.Rounded.Alarm, true) { BedsideClassicSaver(it) },
         Saver("nixie", R.string.saver_nixie, R.string.saver_nixie_desc, C, Icons.Rounded.Lightbulb, true, showsNotifications = true) { NixieSaver(it) },
-        Saver("odometer", R.string.saver_odometer, R.string.saver_odometer_desc, C, Icons.Rounded.Speed, true, showsNotifications = true) { OdometerSaver(it) },
+        Saver("odometer", R.string.saver_odometer, R.string.saver_odometer_desc, C, Icons.Rounded.Speed, true, configurable = true, showsNotifications = true) { OdometerSaver(it) },
         Saver("bigtype", R.string.saver_bigtype, R.string.saver_bigtype_desc, C, Icons.Rounded.FormatSize, true, showsNotifications = true) { BigTypeSaver(it) },
         Saver("rings", R.string.saver_rings, R.string.saver_rings_desc, C, Icons.Rounded.DonutLarge, true) { RingsClockSaver(it) },
         Saver("dayarc", R.string.saver_dayarc, R.string.saver_dayarc_desc, C, Icons.Rounded.WbSunny, true) { DayArcSaver(it) },
@@ -233,18 +233,18 @@ object Savers {
         Saver("candle", R.string.saver_candle, R.string.saver_candle_desc, R_, Icons.Rounded.Whatshot, false) { CandleSaver(it) },
         Saver("snow", R.string.saver_snow, R.string.saver_snow_desc, R_, Icons.Rounded.AcUnit, false) { SnowfallSaver(it) },
         Saver("koi", R.string.saver_koi, R.string.saver_koi_desc, R_, Icons.Rounded.SetMeal, false) { KoiPondSaver(it) },
-        Saver("lighthouse", R.string.saver_lighthouse, R.string.saver_lighthouse_desc, R_, Icons.Rounded.Highlight, false) { LighthouseSaver(it) },
-        Saver("train", R.string.saver_train, R.string.saver_train_desc, R_, Icons.Rounded.Train, false) { TrainSaver(it) },
+        Saver("lighthouse", R.string.saver_lighthouse, R.string.saver_lighthouse_desc, R_, Icons.Rounded.Highlight, false) { SceneLighthouseSaver(it) },
+        Saver("train", R.string.saver_train, R.string.saver_train_desc, R_, Icons.Rounded.Train, false) { SceneTrainSaver(it) },
         Saver("cat", R.string.saver_cat, R.string.saver_cat_desc, R_, Icons.Rounded.Pets, false) { SleepingCatSaver(it) },
-        Saver("aquarium", R.string.saver_aquarium, R.string.saver_aquarium_desc, R_, Icons.Rounded.Pool, false) { AquariumSaver(it) },
+        Saver("aquarium", R.string.saver_aquarium, R.string.saver_aquarium_desc, R_, Icons.Rounded.Pool, false) { SceneAquariumSaver(it) },
 
         // Ambient
         Saver("starfield", R.string.saver_starfield, R.string.saver_starfield_refined_desc, A, Icons.Rounded.Star, false) { StarfieldRefinedSaver(it) },
         Saver("orbits", R.string.saver_orbits, R.string.saver_orbits_refined_desc, A, Icons.Rounded.Language, false) { OrbitsRefinedSaver(it) },
         Saver("constellation", R.string.saver_constellation, R.string.saver_constellation_refined_desc, A, Icons.Rounded.AutoAwesome, false) { ConstellationRefinedSaver(it) },
         Saver("plexus", R.string.saver_plexus, R.string.saver_plexus_desc, A, Icons.Rounded.Hub, false) { ConstellationSaver(it) },
-        Saver("orb", R.string.saver_orb, R.string.saver_orb_desc, A, Icons.Rounded.Lens, false) { OrbSaver(it) },
-        Saver("jellyfish", R.string.saver_jellyfish, R.string.saver_jellyfish_desc, A, Icons.Rounded.ScubaDiving, false) { JellyfishSaver(it) },
+        Saver("orb", R.string.saver_orb, R.string.saver_orb_desc, A, Icons.Rounded.Lens, false, configurable = true) { SceneOrbSaver(it) },
+        Saver("jellyfish", R.string.saver_jellyfish, R.string.saver_jellyfish_desc, A, Icons.Rounded.ScubaDiving, false) { SceneJellyfishSaver(it) },
         Saver("colorfield", R.string.saver_colorfield, R.string.saver_colorfield_desc, A, Icons.Rounded.Gradient, false) { ColorFieldSaver(it) },
         Saver("contours", R.string.saver_contours, R.string.saver_contours_desc, A, Icons.Rounded.Terrain, false) { ContoursSaver(it) },
         Saver("ridgelines", R.string.saver_ridgelines, R.string.saver_ridgelines_desc, A, Icons.Rounded.Landscape, false) { RidgelinesSaver(it) },
