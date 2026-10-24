@@ -1,15 +1,12 @@
 package dev.pridgey.beddery.savers.impl
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.Typeface
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -19,52 +16,41 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.clipRect
-import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.min
+import androidx.compose.ui.unit.sp
 import dev.pridgey.beddery.R
 import dev.pridgey.beddery.data.HourForecast
 import dev.pridgey.beddery.data.WeatherData
 import dev.pridgey.beddery.data.WeatherKind
 import dev.pridgey.beddery.data.WeatherRepository
 import dev.pridgey.beddery.data.weatherKind
+import dev.pridgey.beddery.savers.ClockOverlay
 import dev.pridgey.beddery.savers.SaverContext
-import dev.pridgey.beddery.savers.SizeCache
-import dev.pridgey.beddery.savers.SoftDot
-import dev.pridgey.beddery.savers.TabularNumbers
-import dev.pridgey.beddery.savers.amPm
-import dev.pridgey.beddery.savers.drawGrain
-import dev.pridgey.beddery.savers.formatClock
+import dev.pridgey.beddery.savers.Sketch
+import dev.pridgey.beddery.savers.SketchScene
 import dev.pridgey.beddery.savers.formatTimeWithAmPm
-import dev.pridgey.beddery.savers.hash
-import dev.pridgey.beddery.savers.noise1
+import dev.pridgey.beddery.savers.mixc
 import dev.pridgey.beddery.savers.rememberFrameTime
-import dev.pridgey.beddery.savers.rememberGrainBrush
-import dev.pridgey.beddery.savers.rememberNoiseBrush
-import dev.pridgey.beddery.savers.ridge
-import dev.pridgey.beddery.savers.smoothstep
-import dev.pridgey.beddery.savers.stamp
+import dev.pridgey.beddery.savers.rgb
+import dev.pridgey.beddery.savers.rgba
+import dev.pridgey.beddery.savers.sFlicker
+import dev.pridgey.beddery.savers.sHash
+import dev.pridgey.beddery.savers.sLerp
 import kotlinx.coroutines.delay
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.LocalTime
+import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.floor
+import kotlin.math.max
+import kotlin.math.roundToInt
 import kotlin.math.sin
+
+private const val TAU = (PI * 2).toFloat()
 
 /** What the window shows: the forecast for when you get up. */
 private data class WakeView(val at: LocalDateTime, val kind: WeatherKind, val temp: Int, val high: Int?, val low: Int?, val sample: Boolean)
@@ -95,55 +81,10 @@ private fun viewFor(data: WeatherData, wake: LocalDateTime): WakeView {
     )
 }
 
-private class WindowLayout(size: Size) {
-    val landscape = size.width > size.height
-    val glass: Rect = if (landscape) {
-        Rect(size.width * 0.5f, size.height * 0.12f, size.width * 0.9f, size.height * 0.8f)
-    } else {
-        Rect(size.width * 0.13f, size.height * 0.1f, size.width * 0.87f, size.height * 0.52f)
-    }
-    val frame = glass.inflate(size.minDimension * 0.028f)
-    val roofs: Path
-    val trees: Path
-
-    init {
-        val g = glass
-        val base = g.bottom - g.height * 0.18f
-        roofs = Path().apply {
-            var x = g.left - 10f
-            var k = 0
-            while (x < g.right) {
-                val bw = g.width * (0.12f + 0.1f * hash(k * 7 + 3))
-                val bh = g.height * (0.08f + 0.1f * hash(k * 13 + 1))
-                val top = base - bh
-                moveTo(x, g.bottom)
-                lineTo(x, top)
-                if (hash(k * 5) > 0.45f) {
-                    lineTo(x + bw / 2, top - bw * 0.35f)
-                } else {
-                    lineTo(x + bw * 0.7f, top)
-                    lineTo(x + bw * 0.7f, top - bh * 0.25f)
-                    lineTo(x + bw * 0.8f, top - bh * 0.25f)
-                    lineTo(x + bw * 0.8f, top)
-                }
-                lineTo(x + bw, top)
-                lineTo(x + bw, g.bottom)
-                close()
-                x += bw * (0.92f + 0.2f * hash(k * 11))
-                k++
-            }
-        }
-        val hgt = ridge(48, 81, 0.6f)
-        trees = Path().apply {
-            moveTo(g.left, g.bottom)
-            hgt.forEachIndexed { i, v -> lineTo(g.left + g.width * i / (hgt.size - 1f), base - g.height * (0.1f + 0.14f * v)) }
-            lineTo(g.right, g.bottom)
-            close()
-        }
-    }
-}
-
-/** The view out of a bedroom window, as the forecast says it'll be when you get up. */
+/**
+ * Your bedroom window at night, looking out on the town as the forecast says it will be when you
+ * wake: a clear dawn, cloud, fog, drizzle, rain, snow or a storm. The forecast sits under the clock.
+ */
 @Composable
 fun WeatherWindowSaver(ctx: SaverContext) {
     val location = ctx.settings.weatherLocation
@@ -159,9 +100,6 @@ fun WeatherWindowSaver(ctx: SaverContext) {
         }
     }
     val time = rememberFrameTime()
-    val grain = rememberGrainBrush()
-    val clouds = rememberNoiseBrush(256, 4, 5, seed = 64, contrast = 1.6f)
-    val layout = remember { SizeCache { WindowLayout(it) } }
     val wake = remember(ctx.now.hour, ctx.now.minute / 10, ctx.nextAlarm) { wakeTime(ctx.now, ctx.nextAlarm) }
     val d = data
     val view: WakeView? = when {
@@ -169,292 +107,362 @@ fun WeatherWindowSaver(ctx: SaverContext) {
         ctx.demo -> sampleView(ctx.now, wake, if (ctx.preview) 0 else (ctx.now.minute / 2))
         else -> null
     }
-
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val landscape = maxWidth > maxHeight
-        val dens = LocalDensity.current
-        val u = min(maxWidth, maxHeight)
-        val clock = with(dens) { (u * if (landscape) 0.22f else 0.2f).toSp() }
-        val body = with(dens) { (u * 0.042f).toSp() }
-        val big = with(dens) { (u * 0.075f).toSp() }
-
-        Canvas(Modifier.fillMaxSize()) {
-            val t = time.value
-            val l = layout.get(size)
-            drawRoom(l, view, t)
-            clipRect(l.glass.left, l.glass.top, l.glass.right, l.glass.bottom) {
-                drawOutside(l, view, t, clouds)
-            }
-            drawFrame(l, view?.kind, t)
-            drawGrain(grain, 0.06f)
+    val line = when {
+        view != null -> {
+            val label = stringResource(weatherLabel(view.kind))
+            val at = formatTimeWithAmPm(view.at.toLocalTime(), ctx.use24h)
+            if (view.high != null) stringResource(R.string.window_line, label, at, view.temp, view.high) else stringResource(R.string.window_line_nohigh, label, at, view.temp)
         }
-
-        val col: @Composable () -> Unit = {
-            val tNow = ctx.now.toLocalTime()
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(formatClock(tNow, ctx.use24h), color = Color.White.copy(alpha = 0.88f), fontSize = clock, lineHeight = clock, fontWeight = FontWeight.Light, style = TabularNumbers)
-                if (!ctx.use24h) Text(amPm(tNow), color = Color.White.copy(alpha = 0.5f), fontSize = body, modifier = Modifier.offset(x = 6.dp, y = (-14).dp))
+        location == null -> stringResource(R.string.weather_no_location)
+        failed -> stringResource(R.string.weather_error)
+        else -> stringResource(R.string.weather_loading)
+    }
+    val kind = view?.kind ?: WeatherKind.CLOUDY
+    Box(Modifier.fillMaxSize()) {
+        SketchScene(time) { t -> drawWeatherWindow(t, kind) }
+        if (!ctx.preview) {
+            Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                ClockOverlay(ctx)
+                Text(line, color = Color(0xCCFFE2B4), fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 10.dp, start = 24.dp, end = 24.dp))
             }
-            val v = view
-            when {
-                v != null -> {
-                    Text(
-                        stringResource(R.string.window_when, formatTimeWithAmPm(v.at.toLocalTime(), ctx.use24h)).uppercase(),
-                        color = Color.White.copy(alpha = 0.45f), fontSize = body * 0.75f, letterSpacing = body * 0.12f,
-                        modifier = Modifier.padding(top = 6.dp),
-                    )
-                    Text(
-                        "${v.temp}° · ${stringResource(weatherLabel(v.kind))}", color = Color.White.copy(alpha = 0.85f),
-                        fontSize = big, fontWeight = FontWeight.Light, style = TabularNumbers,
-                    )
-                    if (v.high != null && v.low != null) {
-                        Text(stringResource(R.string.window_range, v.high, v.low), color = Color.White.copy(alpha = 0.5f), fontSize = body, style = TabularNumbers)
-                    }
-                    if (v.sample) Text(stringResource(R.string.window_sample), color = Color.White.copy(alpha = 0.3f), fontSize = body * 0.75f, modifier = Modifier.padding(top = 4.dp))
-                }
-                location == null -> Text(stringResource(R.string.weather_no_location), color = Color.White.copy(alpha = 0.55f), fontSize = body)
-                failed -> Text(stringResource(R.string.weather_error), color = Color.White.copy(alpha = 0.55f), fontSize = body)
-                else -> Text(stringResource(R.string.weather_loading), color = Color.White.copy(alpha = 0.55f), fontSize = body)
-            }
-        }
-        if (landscape) {
-            Column(
-                Modifier.align(Alignment.CenterStart).padding(start = maxWidth * 0.07f).width(maxWidth * 0.38f),
-                verticalArrangement = Arrangement.Center,
-            ) { col() }
-        } else {
-            Column(
-                Modifier.align(Alignment.TopCenter).padding(top = maxHeight * 0.6f).fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) { col() }
         }
     }
 }
 
-private val Wall = Color(0xFF0C0D11)
-private val FrameColor = Color(0xFF1C1D22)
+private val wp = Path()
+private val wq = Path()
 
-private fun DrawScope.drawRoom(l: WindowLayout, view: WakeView?, t: Float) {
-    drawRect(Wall)
-    // A warm bedside lamp just out of view, low on the left.
-    val lamp = Offset(-size.width * 0.05f, size.height * 0.95f)
-    val r = size.maxDimension * 0.9f
-    drawCircle(Brush.radialGradient(listOf(Color(0xFF3A2414).copy(alpha = 0.55f), Color(0xFF1A110A).copy(alpha = 0.25f), Color.Transparent), lamp, r), r, lamp)
-    // Cool light from outside spilling onto the wall below the window.
-    val spill = lerp(Color(0xFF6A88B0), Color(0xFFB0B8C8), if (view?.kind == WeatherKind.SNOW) 1f else 0f)
-    val below = Rect(l.frame.left - l.frame.width * 0.15f, l.frame.bottom, l.frame.right + l.frame.width * 0.15f, l.frame.bottom + l.frame.height * 0.6f)
-    drawRect(
-        Brush.verticalGradient(listOf(spill.copy(alpha = 0.05f), Color.Transparent), below.top, below.bottom),
-        below.topLeft, below.size,
-    )
+private fun hexMix(a: Int, b: Int, t: Float) = mixc(rgb(a), rgb(b), t.coerceIn(0f, 1f)) and 0xFFFFFF
+
+/** 0..1: a storm's lightning, a double flicker every twelve seconds or so. */
+private fun stormFlash(t: Float): Float {
+    val p = t % 12.7f
+    return if (p < 0.08f) 1f else if (p > 0.18f && p < 0.26f) 0.7f else if (p < 0.6f) max(0f, 0.4f - (p - 0.26f) * 1.2f) else 0f
 }
 
-private fun skyColors(kind: WeatherKind?): Pair<Color, Color> = when (kind) {
-    WeatherKind.CLEAR -> Color(0xFF13233F) to Color(0xFF7A8AA8)
-    WeatherKind.PARTLY_CLOUDY -> Color(0xFF1A2640) to Color(0xFF6E7A92)
-    WeatherKind.CLOUDY -> Color(0xFF22272F) to Color(0xFF555C66)
-    WeatherKind.FOG -> Color(0xFF3A3F46) to Color(0xFF7C838C)
-    WeatherKind.DRIZZLE, WeatherKind.RAIN -> Color(0xFF181D25) to Color(0xFF3E4652)
-    WeatherKind.SNOW -> Color(0xFF2A3038) to Color(0xFF8A929C)
-    WeatherKind.STORM -> Color(0xFF0E1016) to Color(0xFF2C303A)
-    null -> Color(0xFF0A0E18) to Color(0xFF1A2232)
-}
+private fun Sketch.drawWeatherWindow(t: Float, kind: WeatherKind) {
+    val wet = kind == WeatherKind.DRIZZLE || kind == WeatherKind.RAIN || kind == WeatherKind.STORM
+    val wx: Float; val wy: Float; val ww: Float; val wh: Float
+    if (land) { wx = W * 0.24f; wy = H * 0.07f; ww = W * 0.52f; wh = H * 0.52f } else { wx = W * 0.1f; wy = H * 0.06f; ww = W * 0.8f; wh = H * 0.46f }
+    val sill = wy + wh
 
-private fun DrawScope.drawOutside(l: WindowLayout, view: WakeView?, t: Float, clouds: dev.pridgey.beddery.savers.TextureBrush) {
-    val g = l.glass
-    val kind = view?.kind
-    val (top, bottom) = skyColors(kind)
-    // Lightning: a double flicker every so often during storms.
-    val flash = if (kind == WeatherKind.STORM) {
-        val cycle = t % 11f
-        (if (cycle in 0f..0.12f) 1f else 0f) + (if (cycle in 0.22f..0.3f) 0.6f else 0f)
-    } else 0f
-    drawRect(Brush.verticalGradient(listOf(lerp(top, Color(0xFFB8C0E0), flash * 0.5f), lerp(bottom, Color(0xFFD8DCF0), flash * 0.4f)), g.top, g.bottom), g.topLeft, g.size)
+    rect(0f, 0f, W, H, vgrad(0f, H, 0f to rgb(0x14141e), 0.6f to rgb(0x1a1822), 1f to rgb(0x0e0c12)))
 
-    // Clear mornings: a low glow and the last stars.
-    if (kind == WeatherKind.CLEAR || kind == WeatherKind.PARTLY_CLOUDY) {
-        val c = Offset(g.left + g.width * 0.7f, g.bottom - g.height * 0.15f)
-        drawCircle(Brush.radialGradient(listOf(Color(0xFFFFB27A).copy(alpha = 0.35f), Color.Transparent), c, g.width * 0.7f), g.width * 0.7f, c, blendMode = BlendMode.Plus)
-        for (i in 0 until 22) {
-            val p = Offset(g.left + hash(i * 3) * g.width, g.top + hash(i * 7 + 1) * g.height * 0.5f)
-            val a = (0.25f + 0.5f * hash(i * 11)) * (0.7f + 0.3f * sin(t * (1f + hash(i)) + i))
-            drawCircle(Color.White.copy(alpha = a * (1f - (p.y - g.top) / (g.height * 0.5f))), 1.1f * density * (0.6f + hash(i * 5)), p)
-        }
-    }
-    // Clouds drifting by.
-    val cover = when (kind) {
-        WeatherKind.PARTLY_CLOUDY -> 0.45f
-        WeatherKind.CLOUDY, WeatherKind.DRIZZLE, WeatherKind.RAIN, WeatherKind.SNOW -> 0.75f
-        WeatherKind.STORM -> 0.9f
-        WeatherKind.FOG -> 0.5f
-        else -> 0f
-    }
-    if (cover > 0f) {
-        val tint = when (kind) {
-            WeatherKind.PARTLY_CLOUDY -> Color(0xFF8C96AC)
-            WeatherKind.STORM -> lerp(Color(0xFF2A2E38), Color(0xFFC8CCE0), flash)
-            WeatherKind.SNOW, WeatherKind.FOG -> Color(0xFFA8AEB6)
-            else -> Color(0xFF5A626E)
-        }
-        for (layer in 0 until 2) {
-            drawRect(
-                clouds.place(g.width * (1.6f - layer * 0.4f), g.height * (0.7f - layer * 0.2f), dx = g.left + t * (4f + layer * 3f), dy = g.top + layer * 40f),
-                g.topLeft, Size(g.width, g.height * 0.7f),
-                alpha = cover * (0.7f - layer * 0.25f), colorFilter = ColorFilter.tint(tint, BlendMode.Modulate),
-            )
-        }
-    }
-    // Rooftops and trees.
-    val sil = when (kind) {
-        WeatherKind.FOG -> Color(0xFF4A5058)
-        WeatherKind.SNOW -> Color(0xFF1E232A)
-        null -> Color(0xFF05070B)
-        else -> lerp(Color(0xFF06080C), bottom, 0.15f)
-    }
-    drawPath(l.trees, lerp(sil, bottom, 0.25f))
-    drawPath(l.roofs, sil)
-    if (kind == WeatherKind.SNOW) {
-        // Snow lying on the ground and roofs.
-        drawRect(Color(0xFFB8C0CA).copy(alpha = 0.85f), Offset(g.left, g.bottom - g.height * 0.05f), Size(g.width, g.height * 0.05f))
-    }
-    // A couple of lit windows across the street, warm against the cold.
-    for (k in 0 until 4) {
-        val x = g.left + g.width * (0.12f + k * 0.23f + 0.05f * hash(k * 9))
-        val y = g.bottom - g.height * (0.08f + 0.05f * hash(k * 4))
-        val on = hash(k * 31) > 0.3f
-        if (on) drawRect(Color(0xFFFFC27A).copy(alpha = 0.55f), Offset(x, y), Size(g.width * 0.02f, g.width * 0.026f))
-    }
-
-    // Fog: flat banks of haze.
-    if (kind == WeatherKind.FOG) {
-        for (b in 0 until 3) {
-            val y = g.top + g.height * (0.45f + b * 0.17f)
-            drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color(0xFF9AA0A8).copy(alpha = 0.5f), Color.Transparent), y - g.height * 0.12f, y + g.height * 0.12f), Offset(g.left, y - g.height * 0.12f), Size(g.width, g.height * 0.24f))
-        }
-    }
-    // Rain and snow falling outside.
-    when (kind) {
-        WeatherKind.RAIN, WeatherKind.DRIZZLE, WeatherKind.STORM -> {
-            val n = if (kind == WeatherKind.DRIZZLE) 60 else 140
-            val len = g.height * if (kind == WeatherKind.DRIZZLE) 0.03f else 0.06f
-            for (i in 0 until n) {
-                val speed = 0.9f + hash(i * 3) * 0.5f
-                val y = g.top + ((hash(i * 7) + t * speed) % 1f) * (g.height + len) - len
-                val x = g.left + hash(i * 13) * g.width + (y - g.top) * 0.08f
-                drawLine(Color(0xFFB0BCCC).copy(alpha = 0.12f + 0.16f * hash(i)), Offset(x, y), Offset(x + len * 0.08f, y + len), strokeWidth = density * 0.9f)
-            }
-        }
-        WeatherKind.SNOW -> {
-            for (i in 0 until 90) {
-                val depth = 0.4f + hash(i * 5) * 0.6f
-                val y = g.top + ((hash(i * 7) + t * 0.05f * depth) % 1f) * g.height
-                val x = g.left + ((hash(i * 13) + noise1(t * 0.2f + i, i) * 0.03f) % 1f) * g.width
-                stamp(SoftDot, Offset(x, y), 6f * density * depth, alpha = 0.55f * depth)
-            }
-        }
-        else -> {}
-    }
-}
-
-private fun DrawScope.drawFrame(l: WindowLayout, kind: WeatherKind?, t: Float) {
-    val g = l.glass
-    val f = l.frame
-    val bar = size.minDimension * 0.014f
-
-    // Raindrops on the glass itself, some sliding down.
-    if (kind == WeatherKind.RAIN || kind == WeatherKind.DRIZZLE || kind == WeatherKind.STORM) {
-        clipRect(g.left, g.top, g.right, g.bottom) {
-            for (i in 0 until 70) {
-                val r = size.minDimension * (0.003f + 0.006f * hash(i * 17))
-                val slides = hash(i * 29) > 0.75f
-                val y0 = g.top + hash(i * 19) * g.height
-                val y = if (slides) g.top + ((hash(i * 19) + t * 0.03f * (0.5f + hash(i))) % 1f) * g.height else y0
-                val p = Offset(g.left + hash(i * 23) * g.width, y)
-                drawCircle(Color.Black.copy(alpha = 0.25f), r, p + Offset(0f, r * 0.3f))
-                drawCircle(Color(0xFF9AA6B8).copy(alpha = 0.22f), r, p)
-                drawCircle(Color.White.copy(alpha = 0.35f), r * 0.32f, p - Offset(r * 0.3f, r * 0.35f))
-            }
-        }
-    }
-    // Condensation along the bottom of the glass on cold mornings.
+    // ---- Outside, at wake-up time.
+    c.save(); c.clipRect(wx, wy, wx + ww, wy + wh)
+    windowView(t, kind, wx, wy, ww, wh)
+    if (wet) windowDrops(t, wx, wy, ww, wh, if (kind == WeatherKind.DRIZZLE) 0.5f else 1f)
     if (kind == WeatherKind.SNOW || kind == WeatherKind.FOG) {
-        drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color(0xFFCAD2DC).copy(alpha = 0.14f)), g.bottom - g.height * 0.25f, g.bottom), Offset(g.left, g.bottom - g.height * 0.25f), Size(g.width, g.height * 0.25f))
+        val snow = kind == WeatherKind.SNOW
+        for ((cx, cy) in arrayOf(wx to wy + wh, wx + ww to wy + wh, wx to wy, wx + ww to wy)) glow(cx, cy, U * if (snow) 0.22f else 0.12f, 0xe0e8f4, if (snow) 0.4f else 0.15f, additive = false)
+    }
+    wp.reset(); wp.moveTo(wx + ww * 0.55f, wy); wp.lineTo(wx + ww * 0.7f, wy); wp.lineTo(wx + ww * 0.4f, wy + wh); wp.lineTo(wx + ww * 0.25f, wy + wh); wp.close()
+    fill(wp, rgba(0xFFFFFF, 0.03f))
+    c.restore()
+    if (kind == WeatherKind.STORM) { val f = stormFlash(t); if (f > 0) rect(0f, 0f, W, H, rgba(0xC8D2FF, 0.12f * f)) }
+
+    // ---- The frame: painted wood, four panes, a deep sill.
+    val fw = U * 0.022f
+    wp.reset(); wp.addRect(wx, wy, wx + ww, wy + wh, Path.Direction.CW); stroke(wp, rgb(0xd8d2c8), fw)
+    line(wx + ww / 2, wy, wx + ww / 2, wy + wh, rgb(0xd8d2c8), fw * 0.55f)
+    line(wx, wy + wh * 0.42f, wx + ww, wy + wh * 0.42f, rgb(0xd8d2c8), fw * 0.55f)
+    rect(wx + ww + fw / 2, wy - fw / 2, fw * 0.4f, wh + fw, rgba(0, 0.35f))
+    rect(wx - U * 0.06f, sill + fw / 2, ww + U * 0.12f, U * 0.03f, rgb(0xc8c0b4))
+    rect(wx - U * 0.06f, sill + fw / 2 + U * 0.03f, ww + U * 0.12f, U * 0.012f, rgba(0, 0.4f))
+    if (kind == WeatherKind.SNOW) {
+        wp.reset(); wp.moveTo(wx, sill - fw * 0.5f)
+        var x = wx
+        while (x <= wx + ww) { wp.lineTo(x, sill - fw * 0.5f - U * (0.012f + 0.01f * abs(sin(x * 0.05f)))); x += 6 }
+        wp.lineTo(wx + ww, sill - fw * 0.5f); wp.close(); fill(wp, rgb(0xeef2fa))
     }
 
-    // The frame: painted wood with a lit inner edge.
-    val frame = Path().apply {
-        addRect(f)
-        addRect(g)
-        fillType = androidx.compose.ui.graphics.PathFillType.EvenOdd
+    // ---- String lights looped along the top of the frame, gently twinkling.
+    val n = 13
+    wp.reset()
+    for (i in 0..n * 4) {
+        val q = i / (n * 4f)
+        val x = wx - U * 0.04f + (ww + U * 0.08f) * q
+        val y = wy - U * 0.02f + abs(sin(q * PI.toFloat() * 3)) * U * 0.035f
+        if (i == 0) wp.moveTo(x, y) else wp.lineTo(x, y)
     }
-    drawPath(frame, FrameColor)
-    drawRect(Color.White.copy(alpha = 0.05f), g.topLeft - Offset(bar * 0.25f, bar * 0.25f), Size(g.width + bar * 0.5f, bar * 0.25f))
-    // Mullions: one across, one down.
-    val cx = g.center.x
-    val cy = g.top + g.height * 0.42f
-    drawRect(FrameColor, Offset(cx - bar / 2, g.top), Size(bar, g.height))
-    drawRect(FrameColor, Offset(g.left, cy - bar / 2), Size(g.width, bar))
-    drawLine(Color.White.copy(alpha = 0.05f), Offset(cx + bar / 2, g.top), Offset(cx + bar / 2, g.bottom), strokeWidth = density)
-    drawLine(Color.White.copy(alpha = 0.05f), Offset(g.left, cy + bar / 2), Offset(g.right, cy + bar / 2), strokeWidth = density)
-    // A faint reflection across the glass.
-    drawLine(
-        Brush.linearGradient(listOf(Color.Transparent, Color.White.copy(alpha = 0.04f), Color.Transparent), g.topLeft, g.bottomRight),
-        Offset(g.left + g.width * 0.1f, g.bottom), Offset(g.left + g.width * 0.55f, g.top), strokeWidth = g.width * 0.08f, cap = StrokeCap.Butt,
-    )
-
-    // Sill, catching the light from outside.
-    val sill = Rect(f.left - bar * 1.2f, f.bottom - bar * 0.2f, f.right + bar * 1.2f, f.bottom + bar * 1.3f)
-    drawRoundRect(Color(0xFF22232A), sill.topLeft, sill.size, CornerRadius(bar * 0.3f))
-    drawRect(Color.White.copy(alpha = 0.07f), sill.topLeft, Size(sill.width, bar * 0.25f))
-    drawRect(Color.Black.copy(alpha = 0.4f), Offset(sill.left, sill.bottom), Size(sill.width, bar * 0.8f))
-
-    // A small potted plant on the sill.
-    val pot = Offset(f.left + f.width * 0.16f, sill.top)
-    val ph = size.minDimension * 0.05f
-    val potPath = Path().apply {
-        moveTo(pot.x - ph * 0.42f, pot.y - ph * 0.7f)
-        lineTo(pot.x + ph * 0.42f, pot.y - ph * 0.7f)
-        lineTo(pot.x + ph * 0.32f, pot.y)
-        lineTo(pot.x - ph * 0.32f, pot.y)
-        close()
+    stroke(wp, rgba(0x1E1E1E, 0.9f), 1f)
+    for (i in 0 until n) {
+        val q = (i + 0.5f) / n
+        val x = wx - U * 0.04f + (ww + U * 0.08f) * q
+        val y = wy - U * 0.02f + abs(sin(q * PI.toFloat() * 3)) * U * 0.035f + U * 0.008f
+        val tw = 0.75f + 0.25f * sin(t * (0.7f + sHash(i.toFloat()) * 0.8f) + i * 2)
+        ellipse(x, y, U * 0.005f, U * 0.008f, 0f, rgb(0xffe0a0))
+        glow(x, y, U * 0.04f, 0xffc070, 0.35f * tw)
     }
-    for (k in 0 until 7) {
-        val a = -70f + k * 23f + 4f * sin(t * 0.4f + k)
-        val rad = Math.toRadians(a.toDouble())
-        val len = ph * (0.9f + 0.5f * hash(k * 3))
-        val base = Offset(pot.x, pot.y - ph * 0.7f)
-        val tip = base + Offset((kotlin.math.sin(rad) * len).toFloat(), (-kotlin.math.cos(rad) * len).toFloat())
-        val leaf = Path().apply {
-            moveTo(base.x, base.y)
-            quadraticTo((base.x + tip.x) / 2 + len * 0.18f, (base.y + tip.y) / 2, tip.x, tip.y)
-            quadraticTo((base.x + tip.x) / 2 - len * 0.18f, (base.y + tip.y) / 2, base.x, base.y)
+    glow(wx + ww / 2, wy, ww * 0.7f, 0xffb060, 0.08f, sy = 0.4f)
+
+    // ---- On the sill: a trailing plant and a candle jar, in silhouette against the glass.
+    val sx = wx + ww * 0.08f
+    val sy = sill + fw / 2
+    wp.reset(); wp.moveTo(sx - U * 0.03f, sy - U * 0.05f); wp.lineTo(sx + U * 0.03f, sy - U * 0.05f); wp.lineTo(sx + U * 0.024f, sy); wp.lineTo(sx - U * 0.024f, sy); wp.close()
+    fill(wp, rgb(0x3a3440))
+    for (v in 0 until 7) {
+        val a = -PI.toFloat() / 2 + (v - 3) * 0.32f + sin(t * 0.3f + v) * 0.02f
+        val len = U * (0.06f + 0.04f * sHash(v * 3f))
+        val lx = sx + kotlin.math.cos(a) * len
+        val ly = sy - U * 0.05f + sin(a) * len
+        wq.reset(); wq.moveTo(sx, sy - U * 0.05f); wq.quadTo(sx + kotlin.math.cos(a) * len * 0.3f, sy - U * 0.05f + sin(a) * len * 0.8f, lx, ly)
+        stroke(wq, rgb(0x1e2a22), U * 0.006f)
+        ellipse(lx, ly, U * 0.012f, U * 0.022f, a + PI.toFloat() / 2, rgb(0x24322a))
+    }
+    val cx = wx + ww * 0.86f
+    roundRect(cx - U * 0.022f, sy - U * 0.05f, U * 0.044f, U * 0.05f, U * 0.008f, rgba(0xFFE6BE, 0.25f))
+    val fl = 0.85f + 0.15f * sFlicker(t, 3f)
+    ellipse(cx, sy - U * 0.032f, U * 0.004f, U * 0.01f * fl, 0f, rgb(0xffe8b0))
+    glow(cx, sy - U * 0.03f, U * 0.1f, 0xffb060, 0.35f * fl)
+    glow(cx, sy, U * 0.25f, 0xffa050, 0.12f * fl, sy = 0.3f)
+
+    // ---- Portrait: a cast-iron radiator under the window, and the floor.
+    if (!land) {
+        val rx = wx + ww * 0.12f; val ry = sill + U * 0.1f; val rw = ww * 0.76f; val rh = U * 0.24f
+        val fy = ry + rh + U * 0.05f
+        rect(0f, fy, W, H - fy, vgrad(fy, H, 0f to rgb(0x2a2024), 1f to rgb(0x120c0e)))
+        for (k in -8..8) line(W / 2 + k * W * 0.07f, fy, W / 2 + k * W * 0.2f, H, rgba(0, 0.35f), 1f)
+        rect(0f, fy - U * 0.035f, W, U * 0.035f, rgb(0xd0c8bc))
+        rect(0f, fy - 2, W, 2f, rgba(0, 0.3f))
+        glow(wx + ww * 0.5f, fy, W * 0.6f, 0x8a90a8, 0.08f, sy = 0.2f)
+        rect(rx + 4, ry + 6, rw, rh, rgba(0, 0.35f))
+        val fins = (rw / (U * 0.035f)).roundToInt()
+        for (f in 0 until fins) {
+            val fx = rx + rw * f / fins
+            val fw2 = rw / fins * 0.82f
+            roundRect(fx, ry, fw2, rh, fw2 * 0.45f, hgrad(fx, fx + fw2, 0f to rgb(0x6a6670), 0.35f to rgb(0x9a96a0), 1f to rgb(0x3a3640)))
         }
-        drawPath(leaf, Color(0xFF0A120C))
+        rect(rx - U * 0.01f, ry + rh * 0.08f, rw + U * 0.02f, U * 0.012f, rgb(0x5a5660))
+        rect(rx - U * 0.01f, ry + rh * 0.86f, rw + U * 0.02f, U * 0.012f, rgb(0x5a5660))
+        circle(rx - U * 0.02f, ry + rh * 0.9f, U * 0.012f, rgb(0xb08040))
+        glow(wx + ww * 0.86f, ry, U * 0.3f, 0xffa050, 0.1f, sy = 0.6f)
     }
-    drawPath(potPath, Color(0xFF16100C))
-    drawRect(Color.White.copy(alpha = 0.04f), Offset(pot.x - ph * 0.42f, pot.y - ph * 0.7f), Size(ph * 0.84f, ph * 0.08f))
 
-    // Curtains drawn back on each side, gathered in soft folds.
-    val ch = f.height + bar * 4
-    for (side in listOf(-1f, 1f)) {
-        val edge = if (side < 0) f.left else f.right
-        val cw = f.width * 0.17f
-        val x0 = edge - cw * 0.55f
-        val curtain = Path().apply {
-            moveTo(x0, f.top - bar * 2)
-            lineTo(x0 + cw, f.top - bar * 2)
-            cubicTo(x0 + cw * 0.9f, f.top + ch * 0.4f, x0 + cw * 0.55f, f.top + ch * 0.6f, x0 + cw * 0.75f, f.top + ch)
-            lineTo(x0 - cw * 0.05f, f.top + ch)
-            close()
+    val far = max(W, H) * 0.8f
+    rect(0f, 0f, W, H, rgrad(W / 2, H * 0.4f, far, 0f to rgba(0, 0f), U * 0.3f / far to rgba(0, 0f), 1f to rgba(0, 0.55f)))
+    grain(0.05f)
+}
+
+private class Sky(val stops: Array<Pair<Float, Int>>, val clouds: Int, val lit: Int, val dark: Int, val haze: Int, val shade: Float)
+private fun skyFor(k: WeatherKind): Sky = when (k) {
+    WeatherKind.CLEAR -> Sky(arrayOf(0f to 0x5a7ab0, 0.5f to 0xc8a0b0, 0.8f to 0xf0b890, 1f to 0xffd8a0), 0, 0xb8bcc4, 0x8a8a98, 0x8a7a98, 0.25f)
+    WeatherKind.PARTLY_CLOUDY -> Sky(arrayOf(0f to 0x5a74a8, 0.55f to 0xb8a0b8, 0.85f to 0xe8b090, 1f to 0xf8d0a0), 4, 0xf0c0a8, 0x8a7a98, 0x7a7090, 0.3f)
+    WeatherKind.CLOUDY -> Sky(arrayOf(0f to 0x6a7488, 1f to 0xa8aab0), 7, 0xb8bcc4, 0x6a7080, 0x7a8090, 0.45f)
+    WeatherKind.FOG -> Sky(arrayOf(0f to 0x9aa0a8, 1f to 0xc8c8c8), 0, 0xb8bcc4, 0x6a7080, 0xb0b4b8, 0.35f)
+    WeatherKind.DRIZZLE -> Sky(arrayOf(0f to 0x5e6878, 1f to 0x9aa0a8), 6, 0xb8bcc4, 0x6a7080, 0x6e7684, 0.5f)
+    WeatherKind.RAIN -> Sky(arrayOf(0f to 0x4a5464, 1f to 0x7a8290), 7, 0xb8bcc4, 0x6a7080, 0x5e6676, 0.55f)
+    WeatherKind.SNOW -> Sky(arrayOf(0f to 0x8a94a8, 1f to 0xd0d4dc), 6, 0xb8bcc4, 0x6a7080, 0xa0a8b8, 0.4f)
+    WeatherKind.STORM -> Sky(arrayOf(0f to 0x24283a, 1f to 0x4a4e60), 8, 0x3a3e52, 0x1a1c2a, 0x2e3244, 0.7f)
+}
+
+private val HousePal = arrayOf(intArrayOf(0xe0c8a8, 0xb8604a), intArrayOf(0xc8a888, 0x8a4a3a), intArrayOf(0xd8d0c0, 0x6a5a5a), intArrayOf(0xe8d8b0, 0xa8584a), intArrayOf(0xb8a898, 0x7a4a48))
+private val Shutters = intArrayOf(0x3a5a4a, 0x4a5a7a, 0x7a3a32)
+private val Doors = intArrayOf(0x3a4a6a, 0x6a2a2a, 0x2a4a3a)
+private val Blooms = intArrayOf(0xc84a5a, 0xe8c84a, 0xd86a8a)
+
+/** The town outside at wake-up, painted for the weather. */
+private fun Sketch.windowView(t: Float, k: WeatherKind, X: Float, Y: Float, WW: Float, HH: Float) {
+    val sky = skyFor(k)
+    val dim = k != WeatherKind.CLEAR && k != WeatherKind.PARTLY_CLOUDY
+    rect(X, Y, WW, HH, vgrad(Y, Y + HH * 0.75f, *Array(sky.stops.size) { sky.stops[it].first to rgb(sky.stops[it].second) }))
+    val flash = if (k == WeatherKind.STORM) stormFlash(t) else 0f
+    if (!dim) {
+        val sx = X + WW * 0.7f
+        val sy = Y + HH * 0.62f
+        glow(sx, sy, WW * 0.8f, 0xffd090, 0.45f, sy = 0.6f)
+        circle(sx, sy, U * 0.035f, rgb(0xfff0c8))
+        for (i in 0 until 4) {
+            val bx = X + ((sHash(i * 3f) * WW + t * U * 0.02f * (0.7f + sHash(i.toFloat()))) % (WW * 1.2f)) - WW * 0.1f
+            val by = Y + HH * (0.2f + 0.15f * sHash(i * 7f)) + sin(t + i) * 4
+            val f = sin(t * 6 + i * 2) * 3
+            wq.reset(); wq.moveTo(bx - 5, by - f); wq.quadTo(bx - 2, by - 2, bx, by); wq.quadTo(bx + 2, by - 2, bx + 5, by - f)
+            stroke(wq, rgba(0x3C323C, 0.6f), 1f)
         }
-        val folds = Brush.horizontalGradient(
-            0f to Color(0xFF15141A), 0.2f to Color(0xFF221F28), 0.4f to Color(0xFF131218), 0.6f to Color(0xFF24212A), 0.8f to Color(0xFF141319), 1f to Color(0xFF1C1A22),
-            startX = x0, endX = x0 + cw,
-        )
-        drawPath(curtain, folds)
-        // Inner edge picks up a little window light.
-        drawLine(Color(0xFF8090A8).copy(alpha = 0.06f), Offset(x0 + cw * (if (side < 0) 0.95f else 0.05f), f.top), Offset(x0 + cw * (if (side < 0) 0.7f else 0.1f), f.top + ch), strokeWidth = density * 2)
     }
-    // Curtain rail.
-    drawRoundRect(Color(0xFF2A2A30), Offset(f.left - f.width * 0.12f, f.top - bar * 2.6f), Size(f.width * 1.24f, bar * 0.7f), CornerRadius(bar))
+    for (i in 0 until sky.clouds) {
+        val cw = WW * (0.45f + 0.35f * sHash(i * 5f))
+        val cy = Y + HH * (0.06f + 0.34f * sHash(i * 3f))
+        val cx = X + ((sHash(i * 7f) * (WW + cw) + t * U * 0.006f * (0.5f + sHash(i.toFloat()))) % (WW + cw * 1.5f)) - cw * 0.7f
+        for (j in 0 until 8) {
+            val lx = cx + cw * (j / 7f)
+            val ly = cy + sin(j * 1.9f + i) * HH * 0.015f
+            val r = cw * (0.16f + 0.07f * sin(j * 2.3f + i))
+            glow(lx, ly + r * 0.15f, r * 1.1f, sky.dark, 0.9f, additive = false, sy = 0.42f)
+            glow(lx - r * 0.1f, ly - r * 0.12f, r * 0.85f, sky.lit, if (k == WeatherKind.PARTLY_CLOUDY) 0.75f else 0.5f, additive = false, sy = 0.32f)
+        }
+    }
+    if (sky.clouds >= 6) rect(X, Y, WW, HH * 0.35f, vgrad(Y, Y + HH * 0.35f, 0f to rgba(sky.dark, 0.7f), 1f to rgba(sky.dark, 0f)))
+    if (flash > 0) rect(X, Y, WW, HH, rgba(0xDCE1FF, 0.5f * flash))
+    if (k == WeatherKind.STORM && flash > 0.6f) {
+        val bolt = floor(t / 12.7f)
+        var lx = X + WW * (0.3f + 0.4f * sHash(bolt))
+        var ly = Y + HH * 0.2f
+        wq.reset(); wq.moveTo(lx, ly)
+        for (s in 0 until 7) { lx += (sHash(s * 3 + bolt) - 0.5f) * U * 0.05f; ly += HH * 0.06f; wq.lineTo(lx, ly) }
+        stroke(wq, rgba(0xF0F0FF, 0.9f), 1.5f)
+    }
+    // Distant hills and a church spire.
+    c.save(); c.translate(X, 0f)
+    ridge(Y + HH * 0.66f, HH * 0.1f, 6f, 1.5f, rgb(sky.haze), Y + HH + 2, 0f, false, null, WW)
+    c.restore()
+    val spX = X + WW * 0.3f
+    val spY = Y + HH * 0.62f
+    val spire = rgb(hexMix(sky.haze, 0, 0.15f))
+    rect(spX - U * 0.012f, spY - HH * 0.08f, U * 0.024f, HH * 0.1f, spire)
+    wq.reset(); wq.moveTo(spX - U * 0.014f, spY - HH * 0.08f); wq.lineTo(spX, spY - HH * 0.2f); wq.lineTo(spX + U * 0.014f, spY - HH * 0.08f); wq.close(); fill(wq, spire)
+    if (k == WeatherKind.FOG) rect(X, Y, WW, HH, rgba(0xD2D4D8, 0.55f))
+
+    // Two rows of houses: the near row in detail, the far row simpler and hazed.
+    for (row in 0..1) {
+        val far = row == 0
+        val base = Y + HH * if (far) 0.8f else 1.02f
+        val s = HH * if (far) 0.11f else 0.2f
+        var x = X - s * 0.5f
+        var i = 0
+        while (x < X + WW + s) {
+            val seed = i * 7f + if (far) 100 else 0
+            val w = s * (1.25f + 0.7f * sHash(seed))
+            val h = s * (0.75f + 0.45f * sHash(seed + 1))
+            val roofH = s * (0.45f + 0.25f * sHash(seed + 2))
+            val sideW = if (far) 0f else s * 0.22f
+            val pal = HousePal[(sHash(seed + 3) * 5).toInt().coerceIn(0, 4)]
+            fun tone(col: Int, extra: Float = 0f) = rgb(hexMix(hexMix(col, 0x2a2a36, sky.shade + extra), sky.haze, if (far) 0.55f else 0f))
+            val wall = tone(pal[0]); val roof = tone(pal[1]); val roofDark = tone(pal[1], 0.2f); val trim = tone(0xf0ece4)
+            if (sideW > 0) {
+                wq.reset(); wq.moveTo(x + w, base + 2); wq.lineTo(x + w, base - h); wq.lineTo(x + w + sideW, base - h - s * 0.06f); wq.lineTo(x + w + sideW, base + 2); wq.close()
+                fill(wq, tone(pal[0], 0.25f))
+            }
+            rect(x, base - h, w, h + 2, wall)
+            val style = sHash(seed + 4)
+            if (!far && style > 0.66f) {
+                wq.reset(); wq.moveTo(x, base - h * 0.5f); wq.lineTo(x + w, base - h * 0.5f)
+                for (b2 in 0..4) { wq.moveTo(x + w * b2 / 4, base - h); wq.lineTo(x + w * b2 / 4, base) }
+                wq.moveTo(x, base - h); wq.lineTo(x + w / 4, base - h * 0.5f); wq.moveTo(x + w, base - h); wq.lineTo(x + w * 0.75f, base - h * 0.5f)
+                stroke(wq, tone(0x4a3020), max(1f, s * 0.035f))
+            } else if (!far && style < 0.33f) {
+                var yy = base - h + s * 0.06f
+                while (yy < base) { line(x, yy, x + w, yy, rgba(0, 0.12f), 1f); yy += s * 0.06f }
+            }
+            val cols = if (w > s * 1.6f) 3 else 2
+            for (fl in 0..1) for (c2 in 0 until cols) {
+                val wW = w * if (cols == 3) 0.16f else 0.22f
+                val wH = h * 0.24f
+                val wX = x + w * ((c2 + 0.5f) / cols) - wW / 2
+                val wY = base - h + h * (0.14f + fl * 0.42f)
+                if (!far && fl == 1 && c2 == cols / 2) continue // the door goes here
+                val lit = sHash(seed * 3 + fl * 5 + c2) > 0.68f
+                rect(wX - 1.5f, wY - 1.5f, wW + 3, wH + 3, trim)
+                rect(wX, wY, wW, wH, if (lit) rgb(0xffcf80) else tone(0x2a3040))
+                if (lit) glow(wX + wW / 2, wY + wH / 2, wW * 1.6f, 0xffb060, if (far) 0.15f else 0.3f)
+                if (!far) {
+                    rect(wX + wW / 2 - 0.6f, wY, 1.2f, wH, trim); rect(wX, wY + wH * 0.45f, wW, 1.2f, trim)
+                    rect(wX - 2, wY + wH + 1.5f, wW + 4, 1.5f, rgba(0, 0.25f))
+                    if (sHash(seed + fl * 11 + c2) > 0.55f) {
+                        val sh = tone(Shutters[(sHash(seed + 9) * 3).toInt().coerceIn(0, 2)])
+                        rect(wX - wW * 0.45f, wY, wW * 0.4f, wH, sh); rect(wX + wW * 1.05f, wY, wW * 0.4f, wH, sh)
+                        for (sl in 1 until 5) { rect(wX - wW * 0.45f, wY + wH * sl / 5, wW * 0.4f, 0.8f, rgba(0, 0.2f)); rect(wX + wW * 1.05f, wY + wH * sl / 5, wW * 0.4f, 0.8f, rgba(0, 0.2f)) }
+                    }
+                    if (fl == 0 && sHash(seed + c2 * 13) > 0.6f) {
+                        rect(wX - 1, wY + wH + 2, wW + 2, wH * 0.18f, tone(0x5a3a2a))
+                        for (fk in 0 until 5) circle(wX + wW * (fk + 0.5f) / 5, wY + wH + 1.5f, wW * 0.08f, tone(Blooms[fk % 3]))
+                        rect(wX, wY + wH, wW, 1.5f, tone(0x3a6a3a))
+                    }
+                }
+            }
+            if (!far) {
+                val dw = w * 0.2f; val dh = h * 0.36f; val dx = x + w / 2 - dw / 2; val dy = base - dh
+                rect(dx - 2, dy - 2, dw + 4, dh + 2, trim)
+                rect(dx, dy, dw, dh, tone(Doors[(sHash(seed + 5) * 3).toInt().coerceIn(0, 2)]))
+                rect(dx + dw * 0.15f, dy + dh * 0.1f, dw * 0.3f, dh * 0.35f, rgba(0xFFFFFF, 0.12f)); rect(dx + dw * 0.55f, dy + dh * 0.1f, dw * 0.3f, dh * 0.35f, rgba(0xFFFFFF, 0.12f))
+                circle(dx + dw * 0.8f, dy + dh * 0.55f, 1.2f, rgb(0xe0c060))
+                if (sHash(seed + 6) > 0.5f) { rect(dx + dw / 2 - 1.5f, dy - s * 0.08f, 3f, 3f, rgb(0xffe0a0)); glow(dx + dw / 2, dy - s * 0.07f, s * 0.25f, 0xffc070, 0.3f) }
+            }
+            val slope = if (sideW > 0) s * 0.06f else 0f
+            wq.reset(); wq.moveTo(x - s * 0.08f, base - h); wq.lineTo(x + w * 0.2f, base - h - roofH); wq.lineTo(x + w * 0.8f + sideW, base - h - roofH - slope); wq.lineTo(x + w + sideW + s * 0.08f, base - h - slope); wq.close()
+            fill(wq, roof)
+            for (r in 1 until 6) {
+                val q = r / 6f; val yy = base - h - roofH * q
+                line(sLerp(x - s * 0.08f, x + w * 0.2f, q), yy, sLerp(x + w + sideW + s * 0.08f, x + w * 0.8f + sideW, q), yy - slope, rgba(0, 0.2f), 1f)
+            }
+            if (!far) {
+                rect(x - s * 0.08f, base - h - 2, w + sideW + s * 0.16f, 3f, roofDark)
+                if (sHash(seed + 7) > 0.55f) {
+                    val dx2 = x + w * 0.35f; val dw2 = w * 0.22f; val dh2 = roofH * 0.45f; val dy2 = base - h - roofH * 0.75f
+                    rect(dx2, dy2, dw2, dh2, wall)
+                    rect(dx2 + dw2 * 0.2f, dy2 + dh2 * 0.25f, dw2 * 0.6f, dh2 * 0.6f, if (sHash(seed + 8) > 0.5f) rgb(0xffcf80) else tone(0x2a3040))
+                    wq.reset(); wq.moveTo(dx2 - dw2 * 0.15f, dy2); wq.lineTo(dx2 + dw2 / 2, dy2 - dh2 * 0.6f); wq.lineTo(dx2 + dw2 * 1.15f, dy2); wq.close(); fill(wq, roofDark)
+                }
+            }
+            if (k == WeatherKind.SNOW) {
+                wq.reset(); wq.moveTo(x - s * 0.08f, base - h); wq.lineTo(x + w * 0.2f, base - h - roofH); wq.lineTo(x + w * 0.8f + sideW, base - h - roofH); wq.lineTo(x + w + sideW + s * 0.08f, base - h)
+                wq.lineTo(x + w * 0.75f, base - h - roofH * 0.82f); wq.lineTo(x + w * 0.25f, base - h - roofH * 0.82f); wq.close(); fill(wq, rgb(0xeef0f6))
+            }
+            if (sHash(seed + 10) > 0.4f) {
+                val chx = x + w * 0.66f; val chy = base - h - roofH * 0.75f; val cw = s * 0.16f
+                rect(chx, chy - s * 0.3f, cw, s * 0.4f, tone(0x8a5a48))
+                for (b2 in 1 until 4) rect(chx, chy - s * 0.3f + b2 * s * 0.1f, cw, 0.8f, rgba(0, 0.15f))
+                rect(chx - 1, chy - s * 0.32f, cw + 2, s * 0.03f, tone(0x6a4a3a))
+                rect(chx + cw * 0.15f, chy - s * 0.38f, cw * 0.25f, s * 0.06f, tone(0xb86a4a)); rect(chx + cw * 0.6f, chy - s * 0.37f, cw * 0.25f, s * 0.05f, tone(0xb86a4a))
+                for (j in 0 until 4) {
+                    val p = (t * 0.06f + j / 4f + i * 0.13f) % 1f
+                    glow(chx + cw / 2 + p * s * if (k == WeatherKind.STORM) 1.6f else 0.8f, chy - s * 0.4f - p * s * 1.2f, s * (0.08f + 0.25f * p), if (dim) 0xc8ccd4 else 0xe8d8d0, 0.16f * sin(p * PI.toFloat()), additive = false)
+                }
+            }
+            x += w + sideW + s * 0.1f; i++
+        }
+        if (far && k == WeatherKind.FOG) rect(X, Y, WW, HH, rgba(0xD2D4D8, 0.35f))
+    }
+    // Precipitation falling past the window.
+    if (k == WeatherKind.SNOW) {
+        for (i in 0 until 120) {
+            val dd = sHash(i * 3f)
+            val x = X + ((sHash(i * 7f) * WW + sin(t * 0.6f + i) * U * 0.02f) % WW + WW) % WW
+            val y = Y + ((sHash(i * 11f) * HH + t * U * (0.02f + 0.05f * dd)) % HH)
+            circle(x, y, 0.8f + 1.8f * dd, rgba(0xFAFCFF, 0.5f + 0.5f * dd))
+        }
+    }
+    if (k == WeatherKind.DRIZZLE || k == WeatherKind.RAIN || k == WeatherKind.STORM) {
+        val drizzle = k == WeatherKind.DRIZZLE
+        val n = if (drizzle) 60 else 160
+        val len = if (drizzle) U * 0.015f else U * 0.035f
+        val slant = if (k == WeatherKind.STORM) 0.3f else 0.12f
+        wq.reset()
+        for (i in 0 until n) {
+            val sp = U * (0.6f + 0.4f * sHash(i * 5f)) * if (drizzle) 0.4f else 1f
+            val x = X + ((sHash(i * 7f) * WW * 1.3f + t * sp * slant) % (WW * 1.3f)) - WW * 0.15f
+            val y = Y + ((sHash(i * 11f) * HH + t * sp) % HH)
+            wq.moveTo(x, y); wq.lineTo(x - len * slant, y - len)
+        }
+        stroke(wq, if (k == WeatherKind.STORM) rgba(0xC8D2E6, 0.35f) else rgba(0xD2DCEB, 0.3f), 1f)
+    }
+    if (k == WeatherKind.FOG) {
+        for (i in 0 until 4) {
+            val fx = X + ((sHash(i * 3f) * WW + t * U * 0.008f) % (WW * 1.6f)) - WW * 0.3f
+            glow(fx, Y + HH * (0.6f + 0.12f * i), WW * 0.6f, 0xe0e2e6, 0.35f, additive = false, sy = 0.25f)
+        }
+    }
+}
+
+/** Raindrops on the glass: still beads, and now and then one gathers and runs down. */
+private fun Sketch.windowDrops(t: Float, X: Float, Y: Float, WW: Float, HH: Float, amount: Float) {
+    for (i in 0 until (70 * amount).roundToInt()) {
+        val x = X + sHash(i * 3.3f) * WW
+        val y = Y + sHash(i * 5.7f) * HH
+        val r = U * (0.003f + 0.006f * sHash(i * 9.1f))
+        ellipse(x, y + r * 0.2f, r, r * 1.1f, 0f, rgba(0x141822, 0.35f))
+        ellipse(x - r * 0.25f, y - r * 0.3f, r * 0.35f, r * 0.3f, 0f, rgba(0xE6ECF5, 0.45f))
+    }
+    for (i in 0 until (8 * amount).roundToInt()) {
+        val period = 5 + sHash(i * 7f) * 6
+        val p = ((t + sHash(i * 3f) * period) % period) / period
+        val x = X + sHash(i * 13.1f) * WW
+        val y0 = Y + sHash(i * 17.3f) * HH * 0.4f
+        val y = y0 + (HH - (y0 - Y)) * p * p
+        val r = U * 0.007f
+        val xx = x + sin(p * 9 + i) * 2
+        line(x, y0, xx, y, rgba(0xDCE4F0, 0.18f), r * 0.8f)
+        ellipse(xx, y, r, r * 1.3f, 0f, rgba(0x141822, 0.4f))
+        circle(xx - r * 0.3f, y - r * 0.4f, r * 0.35f, rgba(0xEBF0FA, 0.5f))
+    }
 }

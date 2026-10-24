@@ -75,7 +75,7 @@ fun SaverOptions(saverId: String, settings: AppSettings, viewModel: MainViewMode
             "agenda", "month" -> CalendarOptions()
             "notifications" -> NotificationSettings(settings, viewModel)
             "pendulum" -> PendulumOptions(settings, viewModel)
-            "orb" -> OrbOptions(settings, viewModel)
+            "orb", "cat" -> OrbOptions(settings, viewModel)
             "odometer" -> SwitchRow(stringResource(R.string.odometer_seconds), settings.odometerSeconds) { v -> viewModel.update { it.copy(odometerSeconds = v) } }
             "photos" -> PhotoOptions(settings, viewModel)
             "world" -> WorldClockOptions(settings, viewModel)
@@ -91,7 +91,7 @@ private val clear @Composable get() = ListItemDefaults.colors(containerColor = C
 @Composable
 private fun OrbOptions(settings: AppSettings, viewModel: MainViewModel) {
     val coats = CatCoat.entries
-    val selected = coats.firstOrNull { it.key == settings.orbCat } ?: CatCoat.Ginger
+    val selected = coats.firstOrNull { it.key == settings.catCoat } ?: CatCoat.Ginger
     ListItem(
         colors = clear,
         headlineContent = { Text(stringResource(R.string.orb_cat)) },
@@ -102,15 +102,17 @@ private fun OrbOptions(settings: AppSettings, viewModel: MainViewModel) {
                     stringResource(
                         when (it) {
                             CatCoat.Ginger -> R.string.cat_ginger
+                            CatCoat.Brown -> R.string.cat_brown
                             CatCoat.Grey -> R.string.cat_grey
                             CatCoat.Black -> R.string.cat_black
                             CatCoat.White -> R.string.cat_white
                             CatCoat.Calico -> R.string.cat_calico
+                            CatCoat.Tuxedo -> R.string.cat_tuxedo
                         },
                     )
                 },
                 modifier = Modifier.padding(top = 8.dp),
-            ) { v -> viewModel.update { it.copy(orbCat = v.key) } }
+            ) { v -> viewModel.update { it.copy(catCoat = v.key) } }
         },
     )
 }

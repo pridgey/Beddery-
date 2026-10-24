@@ -26,7 +26,7 @@ phone is charging and locked: a clock, the weather, your agenda, or something ca
 | Bouncing Clock | Month | Lighthouse |  |
 | Block Clock | Progress | Sleeper Train |  |
 | Tiny Room (pixel art) | World Clock | Sleeping Cat |  |
-|  | Photo Frame | Aquarium |  |
+| Three Hourglasses (day, hour, minute) | Photo Frame | Aquarium |  |
 
 Breathe also comes in a **Refined** version; swipe between the two in full-screen preview to compare.
 
@@ -37,6 +37,8 @@ Shared features:
 - **Notifications** (optional): clocks and info screens show icons for apps with new notifications, and a
   banner when something arrives. Choose icons only or full previews, and whether they appear at night.
   Silent, ongoing and lock-screen-private notifications are respected. Nothing leaves the phone.
+- **Day and night screens**: pick a separate screensaver for your sleep hours, and Beddery switches to
+  it at night and back to your day pick (or shuffle) in the morning.
 - **Night mode**: during your sleep hours, brightness drops to minimum, colors darken, and an optional
   red tint removes blue light.
 - **Burn-in protection**: static elements slowly drift so OLED screens stay healthy.

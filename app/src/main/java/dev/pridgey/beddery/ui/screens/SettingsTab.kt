@@ -43,6 +43,7 @@ import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.ui.res.pluralStringResource
 import dev.pridgey.beddery.savers.Savers
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.Info
@@ -51,6 +52,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -284,7 +286,7 @@ private fun NightSection(settings: AppSettings, viewModel: MainViewModel) {
         SwitchRow(stringResource(R.string.night_mode), settings.nightModeEnabled, stringResource(R.string.night_mode_desc)) { v ->
             viewModel.update { it.copy(nightModeEnabled = v) }
         }
-        AnimatedVisibility(settings.nightModeEnabled) {
+        AnimatedVisibility(settings.nightModeEnabled || settings.nightSaverId != null) {
             Column {
                 ListItem(
                     colors = itemColors,
@@ -298,6 +300,10 @@ private fun NightSection(settings: AppSettings, viewModel: MainViewModel) {
                     headlineContent = { Text(stringResource(R.string.night_end)) },
                     trailingContent = { Text(label(settings.nightEndMinutes), style = MaterialTheme.typography.titleMedium) },
                 )
+            }
+        }
+        AnimatedVisibility(settings.nightModeEnabled) {
+            Column {
                 SwitchRow(stringResource(R.string.night_red), settings.nightRedTint, stringResource(R.string.night_red_desc)) { v ->
                     viewModel.update { it.copy(nightRedTint = v) }
                 }
@@ -458,6 +464,26 @@ private fun ShownSection(settings: AppSettings, viewModel: MainViewModel, onOpen
                 },
             )
         }
+        val night = settings.nightSaverId?.let { Savers.findOrNull(it) }
+        ListItem(
+            colors = itemColors,
+            modifier = Modifier.clickable(onClick = onOpenGallery),
+            leadingContent = { Icon(night?.icon ?: Icons.Rounded.Bedtime, null, tint = MaterialTheme.colorScheme.primary) },
+            headlineContent = { Text(stringResource(R.string.shown_night)) },
+            supportingContent = {
+                Text(
+                    if (night == null) stringResource(R.string.shown_night_none)
+                    else stringResource(R.string.shown_night_some, saverName(night), nightTime(settings.nightStartMinutes), nightTime(settings.nightEndMinutes)),
+                )
+            },
+            trailingContent = {
+                if (night != null) {
+                    IconButton(onClick = { viewModel.update { it.copy(nightSaverId = null) } }) {
+                        Icon(Icons.Rounded.Close, stringResource(R.string.shown_night_clear))
+                    }
+                }
+            },
+        )
     }
 }
 

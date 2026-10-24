@@ -30,6 +30,12 @@ class SettingsTest {
         assertFalse(AppSettings(nightModeEnabled = false).isNight(LocalTime.of(2, 0)))
     }
 
+    @Test fun nightScreenFollowsTheHoursEvenWithoutDimming() {
+        val s = AppSettings(nightModeEnabled = false, nightSaverId = "moon")
+        assertTrue(s.isNightHours(LocalTime.of(2, 0)))
+        assertFalse(s.isNightHours(LocalTime.of(12, 0)))
+    }
+
     @Test fun emptyWindowIsNeverNight() {
         assertFalse(AppSettings(nightStartMinutes = 60, nightEndMinutes = 60).isNight(LocalTime.of(1, 0)))
     }

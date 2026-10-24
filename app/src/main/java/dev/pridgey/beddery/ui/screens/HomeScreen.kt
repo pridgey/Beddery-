@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.AutoAwesomeMosaic
+import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.NightsStay
@@ -207,13 +208,27 @@ private fun NowShowing(settings: AppSettings) {
     } else {
         stringResource(R.string.now_showing, saverName(Savers.find(settings.selectedSaverId)))
     }
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            if (settings.shuffleEnabled) Icons.Rounded.Shuffle else Icons.Rounded.Check, null,
-            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp),
-        )
-        Spacer(Modifier.width(8.dp))
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                if (settings.shuffleEnabled) Icons.Rounded.Shuffle else Icons.Rounded.Check, null,
+                tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        val night = settings.nightSaverId?.let { Savers.findOrNull(it) }
+        if (night != null) {
+            Spacer(Modifier.height(4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Rounded.Bedtime, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    stringResource(R.string.now_night, saverName(night), nightTime(settings.nightStartMinutes)),
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 

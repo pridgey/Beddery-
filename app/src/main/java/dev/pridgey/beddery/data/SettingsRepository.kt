@@ -43,6 +43,7 @@ class SettingsRepository private constructor(context: Context) {
         val shuffleMode = stringPreferencesKey("shuffle_mode")
         val shuffleDeck = stringPreferencesKey("shuffle_deck")
         val lastShuffle = stringPreferencesKey("last_shuffle")
+        val nightSaver = stringPreferencesKey("night_saver")
         val notifications = stringPreferencesKey("notifications_mode")
         val notificationsNight = booleanPreferencesKey("notifications_night")
         val previewHint = booleanPreferencesKey("preview_hint")
@@ -70,7 +71,7 @@ class SettingsRepository private constructor(context: Context) {
         val breath = stringPreferencesKey("breath")
         val pendulum = floatPreferencesKey("pendulum_speed")
         val odometerSeconds = booleanPreferencesKey("odometer_seconds")
-        val orbCat = stringPreferencesKey("orb_cat")
+        val catCoat = stringPreferencesKey("orb_cat")
         val onboarded = booleanPreferencesKey("onboarded")
     }
 
@@ -87,6 +88,7 @@ class SettingsRepository private constructor(context: Context) {
             shuffleMode = p[Keys.shuffleMode].toEnum(d.shuffleMode),
             shuffleDeck = p[Keys.shuffleDeck]?.split(',')?.filter { it.isNotBlank() } ?: d.shuffleDeck,
             lastShuffleId = p[Keys.lastShuffle]?.takeIf { it.isNotBlank() },
+            nightSaverId = p[Keys.nightSaver]?.takeIf { it.isNotBlank() },
             notificationsMode = p[Keys.notifications].toEnum(d.notificationsMode),
             notificationsAtNight = p[Keys.notificationsNight] ?: d.notificationsAtNight,
             previewHintSeen = p[Keys.previewHint] ?: d.previewHintSeen,
@@ -112,7 +114,7 @@ class SettingsRepository private constructor(context: Context) {
             breathPattern = p[Keys.breath].toEnum(d.breathPattern),
             pendulumSpeed = p[Keys.pendulum] ?: d.pendulumSpeed,
             odometerSeconds = p[Keys.odometerSeconds] ?: d.odometerSeconds,
-            orbCat = p[Keys.orbCat] ?: d.orbCat,
+            catCoat = p[Keys.catCoat] ?: d.catCoat,
             onboardingDone = p[Keys.onboarded] ?: d.onboardingDone,
         )
     }
@@ -125,6 +127,7 @@ class SettingsRepository private constructor(context: Context) {
         p[Keys.shuffleMode] = s.shuffleMode.name
         p[Keys.shuffleDeck] = s.shuffleDeck.joinToString(",")
         p[Keys.lastShuffle] = s.lastShuffleId.orEmpty()
+        p[Keys.nightSaver] = s.nightSaverId.orEmpty()
         p[Keys.notifications] = s.notificationsMode.name
         p[Keys.notificationsNight] = s.notificationsAtNight
         p[Keys.previewHint] = s.previewHintSeen
@@ -159,7 +162,7 @@ class SettingsRepository private constructor(context: Context) {
         p[Keys.breath] = s.breathPattern.name
         p[Keys.pendulum] = s.pendulumSpeed
         p[Keys.odometerSeconds] = s.odometerSeconds
-        p[Keys.orbCat] = s.orbCat
+        p[Keys.catCoat] = s.catCoat
         p[Keys.onboarded] = s.onboardingDone
     }
 

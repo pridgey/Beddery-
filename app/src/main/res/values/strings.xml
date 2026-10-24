@@ -17,6 +17,14 @@
     <string name="action_add_to_shuffle">Add to shuffle</string>
     <string name="action_turn_on_shuffle">Turn on shuffle</string>
     <string name="state_current">Current</string>
+    <string name="action_use_at_night">Use at night</string>
+    <string name="action_night_screen">Night screen</string>
+    <string name="detail_night_note">Shown instead from %1$s to %2$s. Change the hours under Night.</string>
+    <string name="now_night">At night, %1$s from %2$s</string>
+    <string name="shown_night">At night</string>
+    <string name="shown_night_none">Same as day. Open a screensaver and tap Use at night.</string>
+    <string name="shown_night_some">%1$s · %2$s to %3$s</string>
+    <string name="shown_night_clear">Stop using a night screen</string>
     <string name="state_in_shuffle">In shuffle</string>
     <string name="options">Options</string>
     <string name="sample_data">Sample</string>
@@ -232,13 +240,13 @@
     <string name="saver_rings">Rings</string>
     <string name="saver_rings_desc">Hours, minutes and seconds as three smoothly filling rings around the time.</string>
     <string name="saver_dayarc">Day Arc</string>
-    <string name="saver_dayarc_desc">Follow the sun, or the moon at night, along its path across the sky, with sunrise and sunset times. Uses your weather location when set.</string>
+    <string name="saver_dayarc_desc">A valley through the whole day. The sun rides an arc from today\'s real sunrise to sunset, the moon takes the night, and the land\'s colours follow the light. Uses your weather location when set.</string>
     <string name="saver_notifications">Notifications</string>
     <string name="saver_notifications_desc">The time and a calm summary of your notifications, grouped by app. You choose whether message content is shown.</string>
     <string name="saver_sleep">Sleep</string>
     <string name="saver_sleep_desc">How long until your alarm, and how many full sleep cycles that leaves. No alarm? It suggests good times to wake up.</string>
     <string name="saver_moon">Moon Phase</string>
-    <string name="saver_moon_desc">Tonight\'s moon, drawn to its true phase, with how much is lit and when it\'s next full.</string>
+    <string name="saver_moon_desc">Tonight\'s moon at its true phase in a deep night sky with the Milky Way: its real seas and craters lit in relief, with how much is lit and when it\'s next full.</string>
     <string name="saver_month">Month</string>
     <string name="saver_month_desc">This month at a glance, with today circled and dots on days with events.</string>
     <string name="saver_progress">Progress</string>
@@ -282,8 +290,7 @@
     <string name="dayarc_sunrise">Sunrise</string>
     <string name="dayarc_sunset">Sunset</string>
     <string name="dayarc_sunrise_in">Sunrise in %1$s</string>
-    <string name="dayarc_sunset_in">Sunset in %1$s</string>
-    <string name="dayarc_daylight">%1$s of daylight today</string>
+    <string name="dayarc_daylight_left">%1$s of daylight left</string>
     <string name="sleep_until_alarm">until your alarm at %1$s</string>
     <string name="sleep_short">Less than one full sleep cycle left. Rest well.</string>
     <plurals name="sleep_cycles">
@@ -440,8 +447,10 @@
     <string name="coach_goal">8h goal</string>
     <string name="pendulum_speed">Speed</string>
     <string name="odometer_seconds">Show seconds</string>
-    <string name="orb_cat">Cat coat</string>
-    <string name="cat_ginger">Ginger</string>
+    <string name="orb_cat">Your cat</string>
+    <string name="cat_ginger">Ginger tabby</string>
+    <string name="cat_brown">Brown tabby</string>
+    <string name="cat_tuxedo">Tuxedo</string>
     <string name="cat_grey">Grey tabby</string>
     <string name="cat_black">Black</string>
     <string name="cat_white">White</string>
@@ -510,10 +519,9 @@
     <string name="sunrise_morning">Good morning</string>
 
     <string name="saver_window">Weather Window</string>
-    <string name="saver_window_desc">The view out of a bedroom window, drawn as the forecast says it\'ll be when you get up: rain on the glass, snow on the roofs or a clear dawn.</string>
-    <string name="window_when">When you wake · %s</string>
-    <string name="window_range">High %1$d° · Low %2$d°</string>
-    <string name="window_sample">Sample forecast</string>
+    <string name="saver_window_desc">Your bedroom window shows the town as the forecast says it\'ll be when you wake: a clear dawn, rain on the glass, snow on the roofs or a storm.</string>
+    <string name="window_line">%1$s when you wake at %2$s · %3$d°, high %4$d°</string>
+    <string name="window_line_nohigh">%1$s when you wake at %2$s · %3$d°</string>
 
     <string name="saver_skytonight">Sky Tonight</string>
     <string name="saver_skytonight_desc">The real sky above you: bright stars, constellations, the planets and the Moon, slowly turning to look all the way round.</string>
@@ -529,14 +537,15 @@
     <string name="saver_train_desc">The view from a sleeper compartment: a moonlit lake, a viaduct, villages and forest sliding past at their own speeds. Tap to rattle over the points.</string>
 
     <string name="saver_cat">Sleeping Cat</string>
-    <string name="saver_cat_desc">A cat curled up asleep on a blanket, breathing slowly. Tap and an ear might twitch.</string>
+    <string name="saver_cat_desc">Your cat asleep on a knitted blanket, moonlight from a round window on the wall behind. It breathes slowly; an ear flicks and the tail twitches. Choose its coat in the options.</string>
 
     <string name="saver_aquarium">Aquarium</string>
     <string name="saver_aquarium_desc">Your screen is the glass of a planted tank: stone and driftwood, neon tetras, cherry shrimp, a toy diver, and now and then a showpiece fish. Tap to call one over.</string>
 
     <string name="saver_hourglass">Hourglass</string>
-    <string name="saver_hourglass_desc">Sand that drains through an hourglass over each hour, piling up below, then turns over on the hour.</string>
-    <string name="hourglass_left">%d min left this hour</string>
+    <string name="saver_hourglasses">Three Hourglasses</string>
+    <string name="saver_hourglasses_desc">Day, hour and minute glasses grouped like a still life, each draining over its span and turning over when it runs out. Tap to turn the minute glass.</string>
+    <string name="saver_hourglass_desc">A turned-wood hourglass under a spotlight that drains over each hour and turns itself over on the hour. Tap to turn it now.</string>
 
     <string name="saver_tinyroom">Tiny Room</string>
     <string name="saver_tinyroom_desc">A little pixel-art bedroom whose window, lamps and wall clock follow the real time of day.</string>

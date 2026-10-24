@@ -43,6 +43,8 @@ data class AppSettings(
     /** Screensavers still to come before the shuffle repeats (ON_START mode). */
     val shuffleDeck: List<String> = emptyList(),
     val lastShuffleId: String? = null,
+    /** Shown instead during the night hours, or null to keep the day pick all night. */
+    val nightSaverId: String? = null,
 
     // Display
     val clockFormat: ClockFormat = ClockFormat.SYSTEM,
@@ -83,13 +85,16 @@ data class AppSettings(
     val pendulumSpeed: Float = 1f,
     /** Odometer shows a seconds pair. */
     val odometerSeconds: Boolean = true,
-    /** The Orb's cat show: ginger, grey, black, white or calico. */
-    val orbCat: String = "ginger",
+    /** Your cat, for Sleeping Cat and The Orb's cat show: ginger, brown, grey, black, white, calico or tuxedo. */
+    val catCoat: String = "ginger",
 
     val onboardingDone: Boolean = false,
 ) {
-    fun isNight(time: LocalTime): Boolean =
-        nightModeEnabled && isInWindow(time.hour * 60 + time.minute, nightStartMinutes, nightEndMinutes)
+    fun isNight(time: LocalTime): Boolean = nightModeEnabled && isNightHours(time)
+
+    /** Inside the night hours, whether or not night mode's dimming is on. */
+    fun isNightHours(time: LocalTime): Boolean =
+        isInWindow(time.hour * 60 + time.minute, nightStartMinutes, nightEndMinutes)
 
     companion object {
         const val DEFAULT_SAVER = "minimal"

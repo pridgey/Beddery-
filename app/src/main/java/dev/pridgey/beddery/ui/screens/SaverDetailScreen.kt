@@ -3,6 +3,8 @@ package dev.pridgey.beddery.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,6 +22,7 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.automirrored.rounded.CompareArrows
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material3.AssistChip
@@ -46,10 +49,12 @@ import dev.pridgey.beddery.MainViewModel
 import dev.pridgey.beddery.R
 import dev.pridgey.beddery.data.AppSettings
 import dev.pridgey.beddery.savers.Savers
+import dev.pridgey.beddery.savers.formatTimeWithAmPm
 import dev.pridgey.beddery.savers.rememberSaverContext
 import dev.pridgey.beddery.standby.StandbyActivity
+import java.time.LocalTime
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SaverDetailScreen(saverId: String, settings: AppSettings, viewModel: MainViewModel, onBack: () -> Unit, onOpenSaver: (String) -> Unit = {}) {
     val saver = Savers.findOrNull(saverId)
@@ -61,6 +66,7 @@ fun SaverDetailScreen(saverId: String, settings: AppSettings, viewModel: MainVie
     val previewContext = rememberSaverContext(settings, preview = true)
     val isCurrent = !settings.shuffleEnabled && settings.selectedSaverId == saver.id
     val inShuffle = saver.id in settings.shuffleIds
+    val atNight = settings.nightSaverId == saver.id
 
     Scaffold(
         topBar = {
@@ -129,7 +135,7 @@ fun SaverDetailScreen(saverId: String, settings: AppSettings, viewModel: MainVie
             }
             Spacer(Modifier.height(20.dp))
 
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (isCurrent) {
                     OutlinedButton(onClick = {}, enabled = false) {
                         Icon(Icons.Rounded.Check, null, Modifier.size(18.dp))
@@ -142,6 +148,7 @@ fun SaverDetailScreen(saverId: String, settings: AppSettings, viewModel: MainVie
                     }) { Text(stringResource(R.string.action_use)) }
                 }
                 FilterChip(
+                    modifier = Modifier.align(Alignment.CenterVertically),
                     selected = inShuffle,
                     onClick = {
                         viewModel.update {
@@ -151,6 +158,21 @@ fun SaverDetailScreen(saverId: String, settings: AppSettings, viewModel: MainVie
                     },
                     leadingIcon = { Icon(Icons.Rounded.Shuffle, null, Modifier.size(FilterChipDefaults.IconSize)) },
                     label = { Text(stringResource(if (inShuffle) R.string.action_in_shuffle else R.string.action_add_to_shuffle)) },
+                )
+                FilterChip(
+                    modifier = Modifier.align(Alignment.CenterVertically),
+                    selected = atNight,
+                    onClick = { viewModel.update { it.copy(nightSaverId = if (atNight) null else saver.id) } },
+                    leadingIcon = { Icon(Icons.Rounded.Bedtime, null, Modifier.size(FilterChipDefaults.IconSize)) },
+                    label = { Text(stringResource(if (atNight) R.string.action_night_screen else R.string.action_use_at_night)) },
+                )
+            }
+            if (atNight) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    stringResource(R.string.detail_night_note, nightTime(settings.nightStartMinutes), nightTime(settings.nightEndMinutes)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             if (settings.shuffleEnabled) {
@@ -175,4 +197,11 @@ fun SaverDetailScreen(saverId: String, settings: AppSettings, viewModel: MainVie
             Spacer(Modifier.height(32.dp))
         }
     }
+}
+
+/** A night-hours boundary, minutes since midnight, in the phone's clock style. */
+@Composable
+fun nightTime(minutes: Int): String {
+    val use24h = android.text.format.DateFormat.is24HourFormat(LocalContext.current)
+    return formatTimeWithAmPm(LocalTime.of(minutes / 60, minutes % 60), use24h)
 }

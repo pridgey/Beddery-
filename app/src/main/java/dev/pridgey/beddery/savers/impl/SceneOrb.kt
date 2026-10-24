@@ -52,14 +52,16 @@ private const val FACE_EL = 0.6f
 private const val TILT = -0.18f
 
 /** The cat's coat on the globe, chosen in the saver's options. */
-enum class CatCoat(val key: String) { Ginger("ginger"), Grey("grey"), Black("black"), White("white"), Calico("calico") }
+enum class CatCoat(val key: String) { Ginger("ginger"), Brown("brown"), Grey("grey"), Black("black"), White("white"), Calico("calico"), Tuxedo("tuxedo") }
 
-private class Coat(val base: Int, val stripe: Int?, val muzzle: Int, val eye: Int, val nose: Int, val line: Int, val patches: Boolean = false)
+private class Coat(val base: Int, val stripe: Int?, val muzzle: Int, val eye: Int, val nose: Int, val line: Int, val patches: Boolean = false, val white: Boolean = false)
 private val Coats = mapOf(
     "ginger" to Coat(0xEC923E, 0xC46828, 0xFCE6C8, 0x96C846, 0xF0828C, 0x6E3C28),
+    "brown" to Coat(0x846648, 0x3A2A1E, 0xD2BEA0, 0xB8A040, 0xB07068, 0x2A1C12),
     "grey" to Coat(0x9698A2, 0x646672, 0xE2E2E6, 0xB0CC50, 0xE696A0, 0x464248),
     "black" to Coat(0x2A2830, null, 0x3A3840, 0xECC43C, 0xBE6E82, 0x968C9C),
     "white" to Coat(0xF2EEE8, null, 0xFFFCF8, 0x6EAAF0, 0xF496A0, 0x96786E),
+    "tuxedo" to Coat(0x1A181C, null, 0xF0EEEA, 0x9AC860, 0xD6969C, 0x78707A, white = true),
     "calico" to Coat(0xF5F0E8, null, 0xFFFAF4, 0xC8AA3C, 0xF08C96, 0x785A50, patches = true),
 )
 
@@ -73,7 +75,7 @@ fun SceneOrbSaver(ctx: SaverContext) {
     val time = rememberFrameTime()
     val state = remember { OrbState() }
     remember { Thread { OrbMaps.warm() }.apply { isDaemon = true; start() } }
-    state.coat = Coats[ctx.settings.orbCat] ?: Coats.getValue("ginger")
+    state.coat = Coats[ctx.settings.catCoat] ?: Coats.getValue("ginger")
     val cooldown = remember { Cooldown(4_000) }
     OnSaverTap {
         if (cooldown.tryAcquire()) {
@@ -473,6 +475,11 @@ private fun kittyAt(x: Float, fy: Float, t: Float, coat: Coat, c: FloatArray) {
     val sx = abs(x)
     mixIn(c, coat.muzzle, inside(ellipseD(sx, fy, 0.09f, 0.14f, 0.13f, 0.1f), 0.03f))
     mixIn(c, coat.muzzle, inside(ellipseD(x, fy, 0f, 0.24f, 0.12f, 0.08f), 0.03f))
+    // A tuxedo's white bib and the blaze running up between its eyes.
+    if (coat.white) {
+        mixIn(c, coat.muzzle, inside(ellipseD(x, fy, 0f, 0.2f, 0.3f, 0.22f), 0.04f))
+        mixIn(c, coat.muzzle, inside(abs(x) - 0.05f - (fy + 0.2f).coerceAtLeast(0f) * 0.3f, 0.02f) * sSmooth(-0.45f, -0.2f, fy))
+    }
     val bp = t % 8.3f
     val shut = if (bp < 1.6f) (if (bp < 0.5f) sSmooth(0f, 0.5f, bp) else if (bp < 1f) 1f else sSmooth(1.6f, 1f, bp)) else 0f
     val look = 0.02f * sin(t * 0.3f)

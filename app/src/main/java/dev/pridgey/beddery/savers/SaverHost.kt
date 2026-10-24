@@ -29,6 +29,7 @@ import dev.pridgey.beddery.data.SettingsRepository
 import dev.pridgey.beddery.data.ShuffleMode
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
+import java.time.LocalTime
 
 private val NightTint = Color(0xFFFF4A26)
 
@@ -48,7 +49,7 @@ fun SaverHost(
     session: Boolean = false,
     context: SaverContext = rememberSaverContext(settings, preview),
 ) {
-    val saver = if (saverOverride != null) Savers.find(saverOverride) else rememberActiveSaver(settings, session)
+    val saver = if (saverOverride != null) Savers.find(saverOverride) else rememberActiveSaver(settings, session, context.now.toLocalTime())
     val night = !preview && settings.isNight(context.now.toLocalTime())
     // A wake-up dawn lifts night mode as it comes up.
     val wake by WakeLight.level.collectAsStateWithLifecycle()
@@ -107,9 +108,16 @@ fun SaverHost(
     }
 }
 
-/** The selected saver, or a shuffled pick when shuffle is on. */
+/** The night screen during the night hours; otherwise the selected saver, or a shuffled pick when shuffle is on. */
 @Composable
-fun rememberActiveSaver(settings: AppSettings, session: Boolean = false): Saver {
+fun rememberActiveSaver(settings: AppSettings, session: Boolean = false, now: LocalTime = LocalTime.now()): Saver {
+    val day = rememberDaySaver(settings, session)
+    val night = settings.nightSaverId?.let { Savers.findOrNull(it) }
+    return if (night != null && settings.isNightHours(now)) night else day
+}
+
+@Composable
+private fun rememberDaySaver(settings: AppSettings, session: Boolean): Saver {
     val pool = remember(settings.shuffleEnabled, settings.shuffleIds, settings.selectedSaverId) {
         if (settings.shuffleEnabled) {
             Savers.all.filter { it.id in settings.shuffleIds }.ifEmpty { Savers.all }

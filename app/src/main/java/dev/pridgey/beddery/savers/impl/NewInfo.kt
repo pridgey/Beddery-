@@ -192,7 +192,7 @@ private fun CyclePill(unit: Dp, fill: Float, accent: Color) {
 
 // ---------------------------------------------------------------- Moon phase
 
-private fun phaseLabel(p: Astronomy.Phase): Int = when (p) {
+internal fun phaseLabel(p: Astronomy.Phase): Int = when (p) {
     Astronomy.Phase.NEW -> R.string.moon_new
     Astronomy.Phase.WAXING_CRESCENT -> R.string.moon_waxing_crescent
     Astronomy.Phase.FIRST_QUARTER -> R.string.moon_first_quarter
@@ -201,60 +201,6 @@ private fun phaseLabel(p: Astronomy.Phase): Int = when (p) {
     Astronomy.Phase.WANING_GIBBOUS -> R.string.moon_waning_gibbous
     Astronomy.Phase.LAST_QUARTER -> R.string.moon_last_quarter
     Astronomy.Phase.WANING_CRESCENT -> R.string.moon_waning_crescent
-}
-
-@Composable
-fun MoonPhaseSaver(ctx: SaverContext) {
-    val phase = remember(ctx.now.hour, ctx.now.minute / 10) { Astronomy.moonPhase(Instant.now()) }
-    val illum = Astronomy.illumination(phase)
-    val southern = ctx.settings.weatherLocation?.let { it.latitude < 0 } ?: (Astronomy.guessLocation(ZoneId.systemDefault()).first < 0)
-    val stars = remember { StarSky(200, 81) }
-    val moon = remember((phase * 200).toInt(), southern) { MoonRender.render(480, phase, southern) }
-    val nextFull = phase < 0.5
-    val days = Astronomy.daysUntil(phase, if (nextFull) 0.5 else 0.0)
-    val date = ctx.now.toLocalDate().plusDays(Math.round(days))
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val landscape = maxWidth > maxHeight
-        val unit = min(maxWidth, maxHeight)
-        val density = LocalDensity.current
-        val title = with(density) { (unit * 0.075f).toSp() }
-        val body = with(density) { (unit * 0.042f).toSp() }
-        Canvas(Modifier.fillMaxSize()) {
-            stars.draw(this, ctx.now.second * 0.4f, 0.6f, horizonFade = 0f)
-            val r = size.minDimension * if (landscape) 0.3f else 0.32f
-            val c = if (landscape) Offset(size.width * 0.3f, size.height / 2) else Offset(size.width / 2, size.height * 0.4f)
-            drawCircle(Brush.radialGradient(listOf(Color(0xFFDDE4F5).copy(alpha = 0.04f + 0.12f * illum.toFloat()), Color.Transparent), c, r * 2.4f), r * 2.4f, c)
-            // Keep the dark side from being lit by stars behind it.
-            drawCircle(Color.Black, r * 0.995f, c)
-            drawImage(
-                moon.asImageBitmap(), srcOffset = IntOffset.Zero, srcSize = IntSize(moon.width, moon.height),
-                dstOffset = IntOffset((c.x - r).toInt(), (c.y - r).toInt()), dstSize = IntSize((r * 2).toInt(), (r * 2).toInt()),
-                filterQuality = FilterQuality.High,
-            )
-        }
-        val info: @Composable () -> Unit = {
-            Column(horizontalAlignment = if (landscape) Alignment.Start else Alignment.CenterHorizontally) {
-                Text(stringResource(phaseLabel(Astronomy.phaseName(phase))), color = Color.White, fontSize = title, fontWeight = FontWeight.Light)
-                Text(stringResource(R.string.moon_illuminated, Math.round(illum * 100).toInt()), color = ctx.accent, fontSize = body)
-                Spacer(Modifier.height(unit * 0.03f))
-                val whole = Math.round(days).toInt()
-                Text(
-                    when {
-                        whole == 0 -> stringResource(if (nextFull) R.string.moon_full_today else R.string.moon_new_today)
-                        else -> pluralStringResource(if (nextFull) R.plurals.moon_full_in else R.plurals.moon_new_in, whole, whole, formatShortDate(date))
-                    },
-                    color = Color.White.copy(alpha = 0.6f), fontSize = body * 0.9f,
-                )
-                Spacer(Modifier.height(unit * 0.06f))
-                Text(formatTimeWithAmPm(ctx.now.toLocalTime(), ctx.use24h) + "  ·  " + formatShortDate(ctx.now.toLocalDate()), color = Color.White.copy(alpha = 0.45f), fontSize = body * 0.85f, style = TabularNumbers)
-            }
-        }
-        if (landscape) {
-            Box(Modifier.align(Alignment.CenterEnd).padding(end = maxWidth * 0.08f).width(maxWidth * 0.36f)) { info() }
-        } else {
-            Box(Modifier.align(Alignment.BottomCenter).padding(bottom = maxHeight * 0.1f)) { info() }
-        }
-    }
 }
 
 // ---------------------------------------------------------------- Month
