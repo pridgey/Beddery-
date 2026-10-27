@@ -346,7 +346,35 @@ private fun NightSection(settings: AppSettings, viewModel: MainViewModel) {
 @Composable
 private fun NotificationsSection(settings: AppSettings, viewModel: MainViewModel) {
     SectionHeader(stringResource(R.string.section_notifications))
-    SettingsGroup { NotificationSettings(settings, viewModel) }
+    SettingsGroup {
+        NotificationSettings(settings, viewModel)
+        SwitchRow(stringResource(R.string.music_takeover), settings.musicTakeover, stringResource(R.string.music_takeover_desc)) { v ->
+            viewModel.update { it.copy(musicTakeover = v) }
+        }
+    }
+}
+
+/** Options on the Now Playing screensaver's page: it needs notification access to see the music. */
+@Composable
+fun NowPlayingOptions(settings: AppSettings, viewModel: MainViewModel) {
+    val context = LocalContext.current
+    var access by remember { mutableStateOf(NotificationStore.hasAccess(context)) }
+    LifecycleResumeEffect(Unit) {
+        access = NotificationStore.hasAccess(context)
+        onPauseOrDispose { }
+    }
+    if (!access) {
+        ListItem(
+            colors = itemColors,
+            headlineContent = { Text(stringResource(R.string.notif_access)) },
+            supportingContent = { Text(stringResource(R.string.nowplaying_no_access)) },
+            leadingContent = { StatusIcon(StatusKind.Info) },
+            trailingContent = { TextButton(onClick = { context.tryStart(NotificationStore.settingsIntent(context)) }) { Text(stringResource(R.string.action_allow)) } },
+        )
+    }
+    SwitchRow(stringResource(R.string.music_takeover), settings.musicTakeover, stringResource(R.string.music_takeover_desc)) { v ->
+        viewModel.update { it.copy(musicTakeover = v) }
+    }
 }
 
 /** Notification access and display options. Also shown on the Notifications screensaver's page. */

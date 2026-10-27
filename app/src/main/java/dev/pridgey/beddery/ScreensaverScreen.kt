@@ -57,19 +57,22 @@ fun ScreensaverScreen(
     window: Window?,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
-    onSettings: (AppSettings) -> Unit = {},
+    /** Whether the window should take touches: for "double-tap to close", or a screensaver with buttons. */
+    onInteractive: (Boolean) -> Unit = {},
 ) {
     val s = rememberSettings()
     if (s == null) {
         Box(modifier.fillMaxSize().background(Color.Black))
         return
     }
-    val settingsCallback by rememberUpdatedState(onSettings)
-    LaunchedEffect(s) { settingsCallback(s) }
+    var saverButtons by remember { mutableStateOf(false) }
+    val interactiveCallback by rememberUpdatedState(onInteractive)
+    val interactive = s.doubleTapToExit || saverButtons
+    LaunchedEffect(interactive) { interactiveCallback(interactive) }
     val saverContext = rememberSaverContext(s, preview = false)
     WindowBrightness(window, s, s.isNight(saverContext.now.toLocalTime()))
     ScreensaverGestures(doubleTapToClose = s.doubleTapToExit, onClose = onClose) {
-        SaverHost(settings = s, modifier = modifier, session = true, context = saverContext)
+        SaverHost(settings = s, modifier = modifier, session = true, context = saverContext, onInteractive = { saverButtons = it })
     }
 }
 

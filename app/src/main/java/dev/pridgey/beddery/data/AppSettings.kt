@@ -57,6 +57,8 @@ data class AppSettings(
     // Notifications (needs notification access)
     val notificationsMode: NotificationsMode = NotificationsMode.ICONS,
     val notificationsAtNight: Boolean = false,
+    /** Switch to Now Playing while music plays (needs notification access too). */
+    val musicTakeover: Boolean = true,
 
     // Night mode
     val nightModeEnabled: Boolean = true,

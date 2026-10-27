@@ -23,6 +23,7 @@ class BedderyNotificationListener : NotificationListenerService() {
     override fun onListenerConnected() {
         NotificationStore.connected = true
         refresh()
+        dev.pridgey.beddery.media.NowPlayingStore.reconnect()
     }
 
     override fun onListenerDisconnected() {

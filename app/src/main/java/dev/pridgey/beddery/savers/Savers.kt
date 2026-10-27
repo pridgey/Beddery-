@@ -48,6 +48,7 @@ import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Lightbulb
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Memory
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Photo
 import androidx.compose.material.icons.rounded.Public
@@ -127,6 +128,7 @@ import dev.pridgey.beddery.savers.impl.SceneMoonSaver
 import dev.pridgey.beddery.savers.impl.NightlightSaver
 import dev.pridgey.beddery.savers.impl.NixieSaver
 import dev.pridgey.beddery.savers.impl.NotificationsSaver
+import dev.pridgey.beddery.savers.impl.NowPlayingSaver
 import dev.pridgey.beddery.savers.impl.OceanRefinedSaver
 import dev.pridgey.beddery.savers.impl.OdometerSaver
 import dev.pridgey.beddery.savers.impl.OrbitsRefinedSaver
@@ -164,6 +166,8 @@ class Saver(
     val variantOf: String? = null,
     /** Has room for the notification icons at the top. Scenic savers show them under their small clock instead. */
     val showsNotifications: Boolean = false,
+    /** Has its own buttons, so the screensaver must accept touches while it shows. */
+    val interactive: Boolean = false,
     val content: @Composable (SaverContext) -> Unit,
 ) {
     val refined: Boolean get() = variantOf != null
@@ -210,6 +214,7 @@ object Savers {
         Saver("window", R.string.saver_window, R.string.saver_window_desc, I, Icons.Rounded.Window, true, configurable = true) { WeatherWindowSaver(it) },
         Saver("agenda", R.string.saver_agenda, R.string.saver_agenda_desc, I, Icons.Rounded.CalendarMonth, true, configurable = true, showsNotifications = true) { AgendaSaver(it) },
         Saver("notifications", R.string.saver_notifications, R.string.saver_notifications_desc, I, Icons.Rounded.Notifications, true, configurable = true) { NotificationsSaver(it) },
+        Saver("nowplaying", R.string.saver_nowplaying, R.string.saver_nowplaying_desc, I, Icons.Rounded.MusicNote, true, configurable = true, interactive = true) { NowPlayingSaver(it) },
         Saver("sleep", R.string.saver_sleep, R.string.saver_sleep_desc, I, Icons.Rounded.Hotel, true, showsNotifications = true) { SleepSaver(it) },
         Saver("sleepcoach", R.string.saver_sleepcoach, R.string.saver_sleepcoach_desc, I, Icons.Rounded.EmojiEmotions, true) { SleepCoachSaver(it) },
         Saver("moon", R.string.saver_moon, R.string.saver_moon_desc, I, Icons.Rounded.DarkMode, false) { SceneMoonSaver(it) },

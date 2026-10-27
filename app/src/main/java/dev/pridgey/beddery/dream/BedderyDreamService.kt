@@ -41,7 +41,8 @@ class BedderyDreamService : DreamService(), LifecycleOwner, SavedStateRegistryOw
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         // Any touch wakes the device, like other screensavers, unless the user chose
-        // "double-tap to close": then Beddery handles touches itself (see onSettings below).
+        // "double-tap to close" or a screensaver with buttons is showing: then Beddery handles
+        // touches itself (see onInteractive below), and a tap outside the buttons still closes.
         isInteractive = false
         isFullscreen = true
         isScreenBright = true
@@ -55,7 +56,7 @@ class BedderyDreamService : DreamService(), LifecycleOwner, SavedStateRegistryOw
                 ScreensaverScreen(
                     window = window,
                     onClose = { finish() },
-                    onSettings = { isInteractive = it.doubleTapToExit },
+                    onInteractive = { isInteractive = it },
                 )
             }
         }

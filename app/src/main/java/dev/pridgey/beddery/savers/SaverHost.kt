@@ -11,6 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -27,6 +29,7 @@ import dev.pridgey.beddery.data.AppSettings
 import dev.pridgey.beddery.data.NotificationsMode
 import dev.pridgey.beddery.data.SettingsRepository
 import dev.pridgey.beddery.data.ShuffleMode
+import dev.pridgey.beddery.media.rememberNowPlaying
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import java.time.LocalTime
@@ -48,8 +51,14 @@ fun SaverHost(
     preview: Boolean = false,
     session: Boolean = false,
     context: SaverContext = rememberSaverContext(settings, preview),
+    /** Told whether the saver on screen has its own buttons, so the window can accept touches. */
+    onInteractive: (Boolean) -> Unit = {},
 ) {
-    val saver = if (saverOverride != null) Savers.find(saverOverride) else rememberActiveSaver(settings, session, context.now.toLocalTime())
+    val picked = if (saverOverride != null) Savers.find(saverOverride) else rememberActiveSaver(settings, session, context.now.toLocalTime())
+    val music = rememberMusicTakeover(enabled = !preview && saverOverride == null && settings.musicTakeover)
+    val saver = if (music) Savers.find(NOW_PLAYING) else picked
+    val interactiveCallback by rememberUpdatedState(onInteractive)
+    LaunchedEffect(saver.interactive) { interactiveCallback(saver.interactive) }
     val night = !preview && settings.isNight(context.now.toLocalTime())
     // A wake-up dawn lifts night mode as it comes up.
     val wake by WakeLight.level.collectAsStateWithLifecycle()
@@ -106,6 +115,31 @@ fun SaverHost(
             }
         }
     }
+}
+
+private const val NOW_PLAYING = "nowplaying"
+
+/**
+ * True while music plays, so the host can switch to Now Playing. Stays on for a while after a
+ * pause, so pausing from the screen itself doesn't snap straight back to the old screensaver.
+ */
+@Composable
+private fun rememberMusicTakeover(enabled: Boolean): Boolean {
+    val track = rememberNowPlaying(enabled)
+    val playing = track?.playing == true
+    val present = track != null
+    var on by remember { mutableStateOf(false) }
+    LaunchedEffect(enabled, playing, present) {
+        when {
+            !enabled -> on = false
+            playing -> on = true
+            on -> {
+                delay(if (present) 2 * 60_000L else 10_000L)
+                on = false
+            }
+        }
+    }
+    return on
 }
 
 /** The night screen during the night hours; otherwise the selected saver, or a shuffled pick when shuffle is on. */

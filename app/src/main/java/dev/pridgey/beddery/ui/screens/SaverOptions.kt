@@ -74,6 +74,7 @@ fun SaverOptions(saverId: String, settings: AppSettings, viewModel: MainViewMode
             "weather", "window" -> WeatherOptions(settings, viewModel)
             "agenda", "month" -> CalendarOptions()
             "notifications" -> NotificationSettings(settings, viewModel)
+            "nowplaying" -> NowPlayingOptions(settings, viewModel)
             "pendulum" -> PendulumOptions(settings, viewModel)
             "orb", "cat" -> OrbOptions(settings, viewModel)
             "odometer" -> SwitchRow(stringResource(R.string.odometer_seconds), settings.odometerSeconds) { v -> viewModel.update { it.copy(odometerSeconds = v) } }
