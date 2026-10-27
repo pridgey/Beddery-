@@ -153,7 +153,7 @@ private val COACH_STICKERS = mapOf(
     ),
     CoachMood.NO_ALARM to listOf(
         CoachSticker(R.drawable.coach_waiting, Seat.RIGHT, CoachFx.TICK, 453, 412, 5, 405, 5, 447, 26, 351, 0.876f, 0.62f),
-        CoachSticker(R.drawable.coach_midnight_snack, Seat.FLOOR, CoachFx.SPARKLE, 441, 483, 5, 476, 5, 435, 174, 175),
+        CoachSticker(R.drawable.coach_midnight_snack, Seat.FLOOR, CoachFx.SPARKLE, 441, 483, 5, 460, 5, 435, 174, 175),
         CoachSticker(R.drawable.coach_butterfly_net, Seat.FLOOR, CoachFx.SPARKLE, 375, 476, 5, 469, 5, 369, 91, 130),
         CoachSticker(R.drawable.coach_painter, Seat.FLOOR, CoachFx.SPARKLE, 424, 470, 6, 463, 5, 418, 137, 282),
     ),
@@ -205,26 +205,50 @@ private class CoachArt(context: Context) {
 /** Where the sticker lands on screen: scale, top-left corner, the image row that sits on the anchor, and the floor (if any). */
 private class CoachPlacement(val s: Float, val x: Float, val y: Float, val anchorY: Float, val floorY: Float?)
 
+/**
+ * Where each sheep sits, placed by hand in the Sheep Placer: for portrait then landscape, the centre of the
+ * image across the screen, the bottom of the image down the screen, and the image's width, all as fractions
+ * of the screen. Values past 1 run off the edge on purpose.
+ */
+private val PLACEMENTS = mapOf(
+    R.drawable.coach_bedtime_story to floatArrayOf(0.5000f, 1.0295f, 1.1026f, 0.7901f, 1.0392f, 0.4442f),
+    R.drawable.coach_bubble_bath to floatArrayOf(0.5000f, 1.0052f, 0.9000f, 0.7200f, 1.0111f, 0.4095f),
+    R.drawable.coach_butterfly_net to floatArrayOf(0.5000f, 1.0066f, 0.9000f, 0.7200f, 0.9809f, 0.3376f),
+    R.drawable.coach_chin_on_hoof to floatArrayOf(0.5000f, 1.0223f, 1.0694f, 0.7851f, 1.0351f, 0.4548f),
+    R.drawable.coach_cocoa to floatArrayOf(0.5000f, 1.0048f, 0.9000f, 0.7200f, 1.0102f, 0.4036f),
+    R.drawable.coach_counting to floatArrayOf(0.5278f, 1.0058f, 0.9000f, 0.7503f, 1.0132f, 0.4372f),
+    R.drawable.coach_crying to floatArrayOf(0.5000f, 1.0381f, 0.9000f, 0.7200f, 1.0572f, 0.4141f),
+    R.drawable.coach_fading_fast to floatArrayOf(0.5000f, 1.0059f, 0.9000f, 0.7369f, 1.0115f, 0.3761f),
+    R.drawable.coach_flat_out to floatArrayOf(0.5000f, 1.0049f, 0.9800f, 0.7200f, 1.0128f, 0.5488f),
+    R.drawable.coach_glass to floatArrayOf(0.5000f, 1.0216f, 1.1528f, 0.7200f, 1.0121f, 0.5132f),
+    R.drawable.coach_groggy to floatArrayOf(0.5000f, 1.0056f, 0.9000f, 0.7200f, 1.0113f, 0.3885f),
+    R.drawable.coach_guitar to floatArrayOf(0.5173f, 0.9832f, 0.9000f, 0.7200f, 0.9674f, 0.4263f),
+    R.drawable.coach_headphones to floatArrayOf(0.5000f, 1.0050f, 0.9000f, 0.7200f, 1.0097f, 0.3747f),
+    R.drawable.coach_look_at_time to floatArrayOf(0.5000f, 1.0211f, 0.9800f, 0.7200f, 1.0463f, 0.5152f),
+    R.drawable.coach_megaphone to floatArrayOf(0.5000f, 1.0040f, 0.9800f, 0.7200f, 1.0099f, 0.5152f),
+    R.drawable.coach_melted to floatArrayOf(0.5000f, 1.0050f, 0.9800f, 0.7200f, 1.0132f, 0.5488f),
+    R.drawable.coach_midnight_snack to floatArrayOf(0.5000f, 1.0409f, 0.9000f, 0.7200f, 1.0594f, 0.3911f),
+    R.drawable.coach_moon_gazing to floatArrayOf(0.5000f, 1.0186f, 1.1528f, 0.7200f, 1.0131f, 0.5242f),
+    R.drawable.coach_painter to floatArrayOf(0.5000f, 0.9863f, 0.9000f, 0.7200f, 0.9886f, 0.3875f),
+    R.drawable.coach_pillow_hug to floatArrayOf(0.4815f, 1.0046f, 0.9000f, 0.7323f, 1.0099f, 0.4131f),
+    R.drawable.coach_pleading to floatArrayOf(0.5000f, 1.0213f, 1.2035f, 0.7200f, 1.0411f, 0.4994f),
+    R.drawable.coach_sleep_mask to floatArrayOf(0.5000f, 1.0058f, 0.9800f, 0.7200f, 1.0153f, 0.5488f),
+    R.drawable.coach_squished to floatArrayOf(0.4797f, 1.0054f, 1.1959f, 0.7099f, 1.0424f, 0.5441f),
+    R.drawable.coach_star_blanket to floatArrayOf(0.5000f, 1.0051f, 0.9000f, 0.7200f, 1.0102f, 0.3830f),
+    R.drawable.coach_tucked_in to floatArrayOf(0.5000f, 1.0501f, 0.9000f, 0.7781f, 1.1068f, 0.4547f),
+    R.drawable.coach_waiting to floatArrayOf(0.5000f, 1.0247f, 0.9800f, 0.7200f, 1.0143f, 0.4978f),
+    R.drawable.coach_yoga to floatArrayOf(0.5000f, 1.0045f, 0.9000f, 0.7395f, 0.9805f, 0.5040f),
+    R.drawable.coach_zen to floatArrayOf(0.5000f, 1.0054f, 0.9000f, 0.7422f, 0.9863f, 0.3913f),
+)
+
 private fun place(st: CoachSticker, W: Float, H: Float, land: Boolean): CoachPlacement {
-    val stX = if (land) W * 0.44f else 0f
-    val stW = if (land) W * 0.56f else W
-    val topLimit = if (land) H * 0.05f else H * 0.37f
-    if (st.kind != Seat.FLOOR) {
-        val edge = st.bottom - 1f
-        val span = (st.edgeR - st.edgeL).toFloat()
-        var s = if (span / st.w > 0.8f) stW * 1.02f / span else stW * (if (land) 0.92f else 0.98f) / st.w
-        s = minOf(s, (H - topLimit) / (edge - st.top))
-        val x = when (st.kind) {
-            Seat.RIGHT -> stX + stW - st.right * s - stW * 0.02f
-            Seat.CORNER -> stX + stW - st.right * s
-            else -> stX + stW / 2 - (st.edgeL + st.edgeR) / 2f * s
-        }
-        return CoachPlacement(s, x, H + 1 - edge * s, edge, null)
-    }
-    val floorY = H * (if (land) 0.955f else 0.95f)
-    val wide = st.w.toFloat() / st.h > 1.4f
-    val s = minOf(stW * (if (wide) 0.98f else 0.9f) / st.w, (floorY - topLimit) / (st.bottom - st.top))
-    return CoachPlacement(s, stX + stW / 2 - st.w * s / 2, floorY - st.bottom * s, st.bottom.toFloat(), floorY)
+    val v = PLACEMENTS.getValue(st.res)
+    val o = if (land) 3 else 0
+    val s = v[o + 2] * W / st.w
+    val left = v[o] * W - st.w * s / 2
+    val top = v[o + 1] * H - st.h * s
+    val floorY = if (st.kind == Seat.FLOOR) H * (if (land) 0.955f else 0.95f) else null
+    return CoachPlacement(s, left, top, st.bottom.toFloat(), floorY)
 }
 
 @Composable
