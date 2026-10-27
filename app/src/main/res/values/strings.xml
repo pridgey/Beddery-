@@ -426,7 +426,7 @@
     <string name="saver_battery_cells">Power Cells</string>
     <string name="saver_battery_cells_desc">A big battery made of ten glowing cells, with a light sweeping through the ones still charging.</string>
     <string name="saver_sleepcoach">Sleep Coach</string>
-    <string name="saver_sleepcoach_desc">A very supportive sheep who has opinions about how much sleep you\'re about to get.</string>
+    <string name="saver_sleepcoach_desc">A very supportive sheep with opinions about how much sleep you\'re about to get. Tap him to see what else he\'s up to.</string>
     <string name="saver_boxbreath">Box Breathing</string>
     <string name="saver_boxbreath_desc">Follow a dot around a square: breathe in, hold, breathe out, hold, four seconds each.</string>
     <string name="saver_tide">Tide</string>
@@ -444,7 +444,7 @@
     <string name="box_breath_hint">Four seconds each side</string>
     <string name="count_down_hint">Breathe out slowly as each number changes</string>
     <string name="coach_until">until your %1$s alarm</string>
-    <string name="coach_goal">8h goal</string>
+    <string name="coach_no_alarm_sub">so it\'s anyone\'s guess</string>
     <string name="pendulum_speed">Speed</string>
     <string name="odometer_seconds">Show seconds</string>
     <string name="orb_cat">Your cat</string>
@@ -460,34 +460,88 @@
     <string name="speed_normal">Normal</string>
     <string name="speed_fast">Fast</string>
     <string-array name="coach_thrilled">
-        <item>Over 9 hours?! Who ARE you?</item>
-        <item>Look at you, getting real sleep. I\'m so proud I could cry.</item>
-        <item>Early night! Your future self says thanks.</item>
+        <item>Over nine hours. Who are you?</item>
+        <item>Look at you, getting real sleep.</item>
+        <item>An early night. Your future self says thanks.</item>
+        <item>This is the dream. Literally.</item>
+        <item>Nine hours? I\'m framing this.</item>
+        <item>Tomorrow-you is going to be unstoppable.</item>
+        <item>Sleep like this and you\'ll glow.</item>
+        <item>Gold star. Now go collect your sleep.</item>
+        <item>I didn\'t think I\'d see the day.</item>
+        <item>Champion sleeper, reporting for bed.</item>
     </string-array>
     <string-array name="coach_happy">
-        <item>Perfect amount of sleep. Now go. Shoo.</item>
-        <item>This is the way. Lights out!</item>
-        <item>Nailed it. Put the phone down, champ.</item>
+        <item>A proper night\'s sleep. Off you go.</item>
+        <item>Perfect amount of sleep. Lights out.</item>
+        <item>Nicely done. Now put the phone down.</item>
+        <item>Right on schedule. Sweet dreams.</item>
+        <item>This is the way. Pillow time.</item>
+        <item>Good timing. The bed\'s warm.</item>
+        <item>Solid night ahead. Don\'t waste it.</item>
+        <item>You\'ve earned this one. Sleep well.</item>
+        <item>Eight-ish hours. The sheep approve.</item>
+        <item>Teeth brushed? Then bed.</item>
     </string-array>
     <string-array name="coach_meh">
         <item>Hmm. That\'s cutting it close.</item>
         <item>Your future self is taking notes.</item>
-        <item>Still time to salvage this. Bed. Now.</item>
+        <item>Still time to salvage this. Bed.</item>
+        <item>Not great, not terrible. Bed now.</item>
+        <item>One more scroll costs you a dream.</item>
+        <item>Six-ish hours. We can do better.</item>
+        <item>Close the tabs. All of them.</item>
+        <item>The pillow is waiting. Patiently.</item>
+        <item>Tomorrow\'s alarm is not your friend.</item>
+        <item>Let\'s not make this a habit.</item>
     </string-array>
     <string-array name="coach_disappointed">
         <item>The sheep are disappointed. All of them.</item>
         <item>Tomorrow\'s coffee is already nervous.</item>
         <item>I\'m not mad. I\'m just… counting.</item>
+        <item>This is going to be a long morning.</item>
+        <item>Please. For me. Go to sleep.</item>
+        <item>Even the moon is judging you.</item>
+        <item>Your eyelids called. They\'re tired.</item>
+        <item>Five hours is a nap with ambition.</item>
+        <item>I believed in you.</item>
+        <item>Every minute counts now. Bed.</item>
     </string-array>
     <string-array name="coach_panic">
-        <item>This is fine. Everything is fine.</item>
-        <item>Sleep is a lesson you\'ll learn tomorrow.</item>
+        <item>It is late. It is SO late.</item>
         <item>Go. To. Sleep.</item>
+        <item>Sleep is a lesson you\'ll learn tomorrow.</item>
+        <item>Put. The. Phone. Down.</item>
+        <item>Your alarm is closer than you think.</item>
+        <item>This is not a drill.</item>
+        <item>Bed. Now. I\'m serious.</item>
+        <item>Tomorrow\'s you is filing a complaint.</item>
+        <item>Three hours. Make them count.</item>
+        <item>Why are we still awake?</item>
+    </string-array>
+    <string-array name="coach_frantic">
+        <item>This is fine. Everything is fine.</item>
+        <item>Under two hours. I have melted.</item>
+        <item>I can hear the alarm from here.</item>
+        <item>Is it even worth it? Yes. Go.</item>
+        <item>Any sleep is better than no sleep.</item>
+        <item>I\'ve stopped counting sheep. I\'m one of them.</item>
+        <item>Close your eyes. Just try.</item>
+        <item>Coffee will not save you.</item>
+        <item>I\'m too tired to be mad.</item>
+        <item>Lie down. Right now. Anywhere.</item>
     </string-array>
     <string-array name="coach_no_alarm">
         <item>No alarm? Bold strategy.</item>
         <item>No alarm set. Living dangerously, I see.</item>
         <item>Sleeping in? I\'ll just be here. Judging.</item>
+        <item>No alarm. The world is your snooze.</item>
+        <item>Free tomorrow? Sleep anyway.</item>
+        <item>No alarm means no excuses.</item>
+        <item>Treat yourself to a long one.</item>
+        <item>The bed\'s open all night.</item>
+        <item>No rush. But also, bed.</item>
+        <item>Enjoy the lie-in. You\'ve earned it.</item>
     </string-array>
     <string-array name="wind_down_prompts">
         <item>Let your shoulders drop.</item>
@@ -524,7 +578,7 @@
     <string name="window_line_nohigh">%1$s when you wake at %2$s · %3$d°</string>
 
     <string name="saver_skytonight">Sky Tonight</string>
-    <string name="saver_skytonight_desc">The real sky above you: bright stars, constellations, the planets and the Moon, slowly turning to look all the way round.</string>
+    <string name="saver_skytonight_desc">The real sky straight above you, framed by the treetops: bright stars, constellations, the planets and the Moon.</string>
     <string name="sky_tonight_at">The sky tonight at %s</string>
     <string name="sky_now">Above you now</string>
     <string name="sky_visible">Up now: %s</string>
@@ -552,4 +606,21 @@
 
     <string name="saver_blocks">Block Clock</string>
     <string name="saver_blocks_desc">Falling blocks that stack themselves into the time, then clear away and rebuild each minute.</string>
+
+    <!-- Updates -->
+    <string name="update_title">Updates</string>
+    <string name="update_check">Check</string>
+    <string name="update_checking">Checking…</string>
+    <string name="update_up_to_date">You have the latest version</string>
+    <string name="update_tap_to_check">Check GitHub for a newer version</string>
+    <string name="update_available">Beddery %s is out</string>
+    <string name="update_install">Update</string>
+    <string name="update_downloading">Downloading %d%%</string>
+    <string name="update_installing">Installing…</string>
+    <string name="update_permission">Allow Beddery to install updates</string>
+    <string name="update_permission_action">Allow</string>
+    <string name="update_failed">Couldn’t update: %s</string>
+    <string name="update_retry">Retry</string>
+    <string name="update_debug">Updates come to release builds</string>
+    <string name="update_banner_body">A new version is ready to install. Your settings stay as they are.</string>
 </resources>

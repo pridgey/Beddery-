@@ -133,7 +133,7 @@ import dev.pridgey.beddery.savers.impl.OrbitsRefinedSaver
 import dev.pridgey.beddery.savers.impl.PendulumWaveSaver
 import dev.pridgey.beddery.savers.impl.PhotoFrameSaver
 import dev.pridgey.beddery.savers.impl.ProgressSaver
-import dev.pridgey.beddery.savers.impl.RainGlassSaver
+import dev.pridgey.beddery.savers.impl.SceneRainSaver
 import dev.pridgey.beddery.savers.impl.RingsClockSaver
 import dev.pridgey.beddery.savers.impl.SleepSaver
 import dev.pridgey.beddery.savers.impl.SnowfallSaver
@@ -230,7 +230,7 @@ object Savers {
         Saver("aurora", R.string.saver_aurora, R.string.saver_aurora_refined_desc, R_, Icons.Rounded.WbTwilight, false) { AuroraRefinedSaver(it) },
         Saver("lava", R.string.saver_lava, R.string.saver_lava_desc, R_, Icons.Rounded.BubbleChart, false) { LavaLampSaver(it) },
         Saver("fireflies", R.string.saver_fireflies, R.string.saver_fireflies_desc, R_, Icons.Rounded.AutoAwesome, false) { FirefliesSaver(it) },
-        Saver("rain", R.string.saver_rain, R.string.saver_rain_desc, R_, Icons.Rounded.WaterDrop, false) { RainGlassSaver(it) },
+        Saver("rain", R.string.saver_rain, R.string.saver_rain_desc, R_, Icons.Rounded.WaterDrop, false) { SceneRainSaver(it) },
         Saver("campfire", R.string.saver_campfire, R.string.saver_campfire_desc, R_, Icons.Rounded.LocalFireDepartment, false) { CampfireSaver(it) },
         Saver("candle", R.string.saver_candle, R.string.saver_candle_desc, R_, Icons.Rounded.Whatshot, false) { CandleSaver(it) },
         Saver("snow", R.string.saver_snow, R.string.saver_snow_desc, R_, Icons.Rounded.AcUnit, false) { SnowfallSaver(it) },

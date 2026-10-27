@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -50,6 +51,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -75,12 +80,16 @@ import dev.pridgey.beddery.savers.SaverContext
 import dev.pridgey.beddery.savers.Savers
 import dev.pridgey.beddery.savers.rememberSaverContext
 import dev.pridgey.beddery.standby.StandbyActivity
+import dev.pridgey.beddery.system.Updater
+import dev.pridgey.beddery.system.showsBanner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(settings: AppSettings, viewModel: MainViewModel, onOpenSaver: (String) -> Unit) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val context = LocalContext.current
+    LaunchedEffect(Unit) { Updater.checkIfDue(context) }
     val scroll = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
         modifier = Modifier.nestedScroll(scroll.nestedScrollConnection),
@@ -132,43 +141,51 @@ private fun GalleryTab(
     var refinedOnly by rememberSaveable { mutableStateOf(false) }
     val previewContext = rememberSaverContext(settings, preview = true)
     val savers = Savers.all.filter { (filter == null || it.category == filter) && (!refinedOnly || it.refined) }
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(152.dp),
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = padding + PaddingValues(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        if (!settings.onboardingDone) {
-            item(span = { GridItemSpan(maxLineSpan) }, key = "setup") {
-                SetupCard(onSetup = onSetup, onDismiss = { viewModel.update { it.copy(onboardingDone = true) } })
+    val update by Updater.state.collectAsStateWithLifecycle()
+    val grid = rememberLazyGridState()
+    val stills = remember { StillScheduler() }
+    LaunchedEffect(grid) { snapshotFlow { grid.isScrollInProgress }.collect { stills.paused = it } }
+    CompositionLocalProvider(LocalStillScheduler provides stills) {
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(152.dp),
+            state = grid,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = padding + PaddingValues(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            if (!settings.onboardingDone) {
+                item(span = { GridItemSpan(maxLineSpan) }, key = "setup") {
+                    SetupCard(onSetup = onSetup, onDismiss = { viewModel.update { it.copy(onboardingDone = true) } })
+                }
             }
-        }
-        item(span = { GridItemSpan(maxLineSpan) }, key = "now") { NowShowing(settings) }
-        item(span = { GridItemSpan(maxLineSpan) }, key = "filters") {
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = filter == null && !refinedOnly,
-                    onClick = { filter = null; refinedOnly = false },
-                    label = { Text(stringResource(R.string.category_all)) },
-                )
-                SaverCategory.entries.forEach { c ->
+            if (update.showsBanner) item(span = { GridItemSpan(maxLineSpan) }, key = "update") { UpdateBanner() }
+            item(span = { GridItemSpan(maxLineSpan) }, key = "now") { NowShowing(settings) }
+            item(span = { GridItemSpan(maxLineSpan) }, key = "filters") {
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
-                        selected = filter == c,
-                        onClick = { filter = if (filter == c) null else c },
-                        label = { Text(stringResource(c.label)) },
+                        selected = filter == null && !refinedOnly,
+                        onClick = { filter = null; refinedOnly = false },
+                        label = { Text(stringResource(R.string.category_all)) },
+                    )
+                    SaverCategory.entries.forEach { c ->
+                        FilterChip(
+                            selected = filter == c,
+                            onClick = { filter = if (filter == c) null else c },
+                            label = { Text(stringResource(c.label)) },
+                        )
+                    }
+                    FilterChip(
+                        selected = refinedOnly,
+                        onClick = { refinedOnly = !refinedOnly },
+                        leadingIcon = { Icon(Icons.Rounded.AutoAwesome, null, Modifier.size(18.dp)) },
+                        label = { Text(stringResource(R.string.category_refined)) },
                     )
                 }
-                FilterChip(
-                    selected = refinedOnly,
-                    onClick = { refinedOnly = !refinedOnly },
-                    leadingIcon = { Icon(Icons.Rounded.AutoAwesome, null, Modifier.size(18.dp)) },
-                    label = { Text(stringResource(R.string.category_refined)) },
-                )
             }
-        }
-        items(savers, key = { it.id }) { saver ->
-            SaverCard(saver, settings, previewContext, onClick = { onOpenSaver(saver.id) })
+            items(savers, key = { it.id }) { saver ->
+                SaverCard(saver, settings, previewContext, onClick = { onOpenSaver(saver.id) })
+            }
         }
     }
 }
@@ -248,7 +265,7 @@ private fun SaverCard(saver: Saver, settings: AppSettings, context: SaverContext
         modifier = Modifier.semantics { if (active) stateDescription = activeLabel },
     ) {
         Box {
-            SaverPreview(saver, settings, context, Modifier.fillMaxWidth().padding(8.dp))
+            SaverStill(saver, settings, context, Modifier.fillMaxWidth().padding(8.dp))
             if (saver.refined) RefinedBadge(Modifier.align(Alignment.TopStart).padding(16.dp), onDark = true)
             if (active) {
                 Box(

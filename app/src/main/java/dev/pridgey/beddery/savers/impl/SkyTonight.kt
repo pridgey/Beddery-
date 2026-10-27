@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.LocalDensity
@@ -51,7 +52,6 @@ import dev.pridgey.beddery.savers.formatTimeWithAmPm
 import dev.pridgey.beddery.savers.hash
 import dev.pridgey.beddery.savers.rememberFrameTime
 import dev.pridgey.beddery.savers.rememberGrainBrush
-import dev.pridgey.beddery.savers.ridge
 import java.time.LocalDateTime
 import java.time.ZoneId
 import kotlin.math.PI
@@ -59,7 +59,6 @@ import kotlin.math.asin
 import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.sin
-import kotlin.math.tan
 
 private const val RD = PI.toFloat() / 180f
 
@@ -177,7 +176,6 @@ private fun planetSize(p: Sky.Planet) = when (p) {
     Sky.Planet.MERCURY -> 0.5f
 }
 
-private val compass = listOf("N", "NE", "E", "SE", "S", "SW", "W", "NW")
 
 /** The real night sky above you: bright stars, constellations, the planets and the Moon, slowly panning round. */
 @Composable
@@ -193,7 +191,7 @@ fun SkyTonightSaver(ctx: SaverContext) {
     val moonImage = remember((sky.moonPhase * 100).toInt(), sky.southern) {
         MoonRender.render(160, sky.moonPhase, sky.southern).asImageBitmap()
     }
-    val land = remember { ridge(181, 404, 0.55f) }
+    val forest = remember { Forest() }
     val labels = remember { HashMap<String, TextLayoutResult>() }
     val placed = remember { ArrayList<Rect>() }
     val milkyTint = remember { ColorFilter.tint(Color(0xFFC8D4FF), BlendMode.Modulate) }
@@ -210,21 +208,18 @@ fun SkyTonightSaver(ctx: SaverContext) {
             val t = time.value
             val w = size.width
             val h = size.height
-            val fov = if (landscape) 100f else 84f
-            val alt0 = if (landscape) 34f else 38f
-            val scale = (w / 2f) / (2f * tan(fov / 4f * RD))
-            val facing = if (sky.southern) 0f else 180f
-            // Pan slowly all the way round: about 25 minutes a turn. Thumbnails hold still.
-            val azC = (facing + if (ctx.preview) 0f else t * 0.24f) % 360f
-            val horizonY = h * if (landscape) 0.9f else 0.8f
-            // Place the view so the horizon straight ahead sits at horizonY.
-            val probe = View(azC, alt0, scale, w / 2, 0f).project(0f, azC)!!.y
-            val view = View(azC, alt0, scale, w / 2, horizonY - probe)
+            // Looking straight up: north at the top and east on the left, like a star chart.
+            // The horizon is a circle just past the corners, so the forest edge frames the sky.
+            val horizonR = 0.5f * kotlin.math.hypot(w, h)
+            val scale = horizonR / 2f
+            val view = View(180f, 90f, scale, w / 2, h / 2)
             val unit = size.minDimension
             placed.clear()
+            // Keep names clear of the clock and captions in the top corner.
+            placed += Rect(0f, 0f, w * if (landscape) 0.5f else 0.85f, (if (landscape) 20.dp else 56.dp).toPx() + unit * 0.3f)
 
-            // Sky: darkest overhead, a faint glow of distant towns at the horizon.
-            drawRect(Brush.verticalGradient(0f to Color(0xFF010208), 0.6f to Color(0xFF050A18), 0.92f to Color(0xFF0E1426), 1f to Color(0xFF1A1A24), startY = 0f, endY = horizonY))
+            // Sky: darkest overhead, a faint glow of distant towns toward the horizon.
+            drawRect(Brush.radialGradient(0f to Color(0xFF010208), 0.55f to Color(0xFF040915), 0.82f to Color(0xFF0C1428), 1f to Color(0xFF1E2438), center = Offset(w / 2, h / 2), radius = horizonR))
 
             // The Milky Way: a soft, uneven river of light.
             for (i in sky.milkyAlt.indices) {
@@ -261,11 +256,14 @@ fun SkyTonightSaver(ctx: SaverContext) {
                 val pts = members.toList().mapNotNull { proj[it] }
                 if (pts.size < members.size || pts.isEmpty()) continue
                 val c = Offset(pts.sumOf { it.x.toDouble() }.toFloat() / pts.size, pts.maxOf { it.y })
-                if (c.x < 0 || c.x > w || c.y > horizonY - 10) continue
+                if (c.x < 0 || c.x > w || c.y < 0 || c.y > h) continue
                 val lay = labels.getOrPut("c:$name") {
                     measurer.measure(name.uppercase(), TextStyle(color = Color(0xFF9DB4E8), fontSize = 9.sp, letterSpacing = 1.6.sp))
                 }
-                drawText(lay, topLeft = Offset(c.x - lay.size.width / 2f, c.y + unit * 0.02f), alpha = 0.32f)
+                val box = Rect(Offset(c.x - lay.size.width / 2f, c.y + unit * 0.02f), Size(lay.size.width.toFloat(), lay.size.height.toFloat()))
+                if (placed.any { it.overlaps(box) }) continue
+                placed += box
+                drawText(lay, topLeft = box.topLeft, alpha = 0.32f)
             }
 
             // Bright stars, sized and coloured by magnitude.
@@ -302,8 +300,10 @@ fun SkyTonightSaver(ctx: SaverContext) {
                 drawLabel(measurer, labels, placed, planet.label, p, r * 3f, c, 0.75f)
             }
 
-            // The land: a low, uneven horizon that turns with the view.
-            drawGround(view, azC, fov, land, horizonY, h, measurer, labels)
+            // The clearing's edge: two rows of pines leaning in from the horizon.
+            val ring = forest.get(view, w, h)
+            drawPath(ring.back, Color(0xFF0B1022))
+            drawPath(ring.front, Color(0xFF010205))
             drawGrain(grain, 0.05f)
         }
 
@@ -351,35 +351,58 @@ private fun DrawScope.drawLabel(
     drawText(lay, topLeft = spot, alpha = alpha)
 }
 
-private fun DrawScope.drawGround(view: View, azC: Float, fov: Float, land: FloatArray, horizonY: Float, h: Float, measurer: TextMeasurer, cache: HashMap<String, TextLayoutResult>) {
-    val path = Path()
-    val half = fov / 2f + 12f
-    var first = true
-    var a = -half
-    while (a <= half) {
-        val az = ((azC + a) % 360f + 360f) % 360f
-        // Hills and trees: a couple of degrees high, varying around the horizon.
-        val k = (az / 2f).toInt().coerceIn(0, land.size - 1)
-        val bump = 0.4f + land[k] * 2.2f + if (hash(k * 3) > 0.7f) 0.8f else 0f
-        val p = view.project(bump, az) ?: Offset(0f, horizonY)
-        if (first) {
-            path.moveTo(p.x, h)
-            first = false
+/** Pines all round the horizon, projected into the upward view. Built once per screen size. */
+private class Forest {
+    class Ring(val back: Path, val front: Path)
+
+    private var ring: Ring? = null
+    private var forSize = 0f to 0f
+
+    fun get(view: View, w: Float, h: Float): Ring {
+        ring?.takeIf { forSize == w to h }?.let { return it }
+        val back = Path().apply { fillType = PathFillType.EvenOdd }
+        val front = Path()
+        // Everything below the horizon is ground: a ring out past the screen's corners.
+        val far = (w + h) * 2
+        back.addOval(Rect(Offset(w / 2, h / 2), far))
+        back.addOval(Rect(Offset(w / 2, h / 2), view.project(1.5f, 0f)!!.let { (it - Offset(w / 2, h / 2)).getDistance() }))
+        var az = 0f
+        var i = 0
+        while (az < 360f) {
+            pine(back, view, az, 10f + hash(i * 5 + 1) * 18f, i)
+            az += 2.4f + hash(i * 3 + 2) * 2.6f
+            i++
         }
-        path.lineTo(p.x, p.y)
-        a += 1f
+        az = 1.3f
+        while (az < 360f) {
+            val tall = hash(i * 11 + 4)
+            pine(front, view, az, 8f + tall * tall * 34f, i)
+            az += 3.2f + hash(i * 7 + 9) * 4f
+            i++
+        }
+        return Ring(back, front).also { ring = it; forSize = w to h }
     }
-    path.lineTo(size.width + 50f, h)
-    path.close()
-    drawPath(path, Color(0xFF040508))
-    // Compass points on the ground below the horizon.
-    for (i in compass.indices) {
-        val az = i * 45f
-        if (kotlin.math.abs(Sky.angleDiff(az.toDouble(), azC.toDouble())) > fov / 2f) continue
-        val p = view.project(-4f, az) ?: continue
-        val lay = cache.getOrPut("d:${compass[i]}") {
-            measurer.measure(compass[i], TextStyle(color = Color(0xFF9DB4E8), fontSize = 10.sp, letterSpacing = 1.sp, fontWeight = FontWeight.Medium))
+
+    /** One conifer, tip [height] degrees up, as jagged tiers of branches narrowing to the top. */
+    private fun pine(path: Path, view: View, az: Float, height: Float, seed: Int) {
+        val half = height * (0.2f + hash(seed + 31) * 0.08f)
+        val tiers = 6 + (hash(seed + 1) * 3).toInt()
+        fun at(alt: Float, dAz: Float) = view.project(alt, az + dAz)!!
+        path.moveTo(at(height, 0f).x, at(height, 0f).y)
+        for (k in 1..tiers) {
+            val f = k / tiers.toFloat()
+            val alt = height - height * 0.92f * f
+            path.lineTo(at(alt, half * f).x, at(alt, half * f).y)
+            if (k < tiers) path.lineTo(at(alt + height * 0.05f, half * f * 0.55f).x, at(alt + height * 0.05f, half * f * 0.55f).y)
         }
-        drawText(lay, topLeft = Offset(p.x - lay.size.width / 2f, p.y), alpha = if (i % 2 == 0) 0.45f else 0.25f)
+        path.lineTo(at(-3f, half * 0.12f).x, at(-3f, half * 0.12f).y)
+        path.lineTo(at(-3f, -half * 0.12f).x, at(-3f, -half * 0.12f).y)
+        for (k in tiers downTo 1) {
+            val f = k / tiers.toFloat()
+            val alt = height - height * 0.92f * f
+            if (k < tiers) path.lineTo(at(alt + height * 0.05f, -half * f * 0.55f).x, at(alt + height * 0.05f, -half * f * 0.55f).y)
+            path.lineTo(at(alt, -half * f).x, at(alt, -half * f).y)
+        }
+        path.close()
     }
 }

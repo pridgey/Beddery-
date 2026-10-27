@@ -498,6 +498,7 @@ private fun AboutSection() {
             headlineContent = { Text(stringResource(R.string.app_name)) },
             supportingContent = { Text(stringResource(R.string.about_version, BuildConfig.VERSION_NAME)) },
         )
+        UpdateRow()
         Text(
             stringResource(R.string.about_weather_credit),
             style = MaterialTheme.typography.bodySmall,

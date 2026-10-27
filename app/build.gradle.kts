@@ -22,6 +22,9 @@ android {
         versionCode = ciVersionCode
         versionName = ciVersionName
         resValue("string", "dream_settings_component", "dev.pridgey.beddery/dev.pridgey.beddery.MainActivity")
+        // Where the app looks for updates. A read-only token is only needed while the repo is private.
+        buildConfigField("String", "UPDATE_REPO", "\"${System.getenv("UPDATE_REPO") ?: "pridgey/Beddery-"}\"")
+        buildConfigField("String", "UPDATE_TOKEN", "\"${System.getenv("UPDATE_TOKEN") ?: ""}\"")
     }
 
     signingConfigs {

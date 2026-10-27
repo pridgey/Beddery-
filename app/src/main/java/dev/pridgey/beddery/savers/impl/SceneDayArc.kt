@@ -25,6 +25,7 @@ import java.time.Duration
 import java.time.LocalDateTime
 import java.time.ZoneId
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.exp
@@ -152,12 +153,25 @@ private fun Sketch.drawDayArc(t: Float, hNow: Float, rise: Float, set: Float, la
     // ---- The valley.
     fun tone(night: Int, day: Int) = mixc(mixc(rgb(night), rgb(day), L), rgb(0xc06a6a), warm * 0.25f)
     ridge(hz - H * 0.02f, H * 0.12f, 4f, 1.6f, tone(0x1a2040, 0x7a9ab8), hz + 2, 0f, true, if (L > 0.4f) rgba(0xFFFFFF, 0.25f) else rgba(0xC8D2FF, 0.2f))
-    mist(hz - H * 0.02f, H * 0.05f, mixc(low, rgb(0xffffff), 0.2f).rgbOnly(), 0.45f)
     val hillBase = hz + H * 0.05f
+    // Far fields between the mountains and the hill, so the land runs on without a gap.
+    rect(0f, hz - 1, W, hillBase + H * 0.1f - hz, vgrad(hz, hillBase + H * 0.05f, 0f to tone(0x161c38, 0x8aa6a0), 1f to tone(0x121a32, 0x6e9468)))
+    for (k in 0 until 3) {
+        val y = hz + (hillBase - hz) * (0.25f + k * 0.3f)
+        rect(0f, y, W, H * 0.004f, if (k % 2 == 0) rgba(0xFFFFFF, 0.04f) else rgba(0, 0.05f))
+    }
+    mist(hz - H * 0.02f, H * 0.05f, mixc(low, rgb(0xffffff), 0.2f).rgbOnly(), 0.45f)
     val n = ((W + 12) / 3).toInt() + 1
     val hill = FloatArray(n)
     for (i in 0 until n) { val x = -4f + i * 3; hill[i] = hillBase - sFbm((x / W * 2 + 3).toDouble(), 9.0).toFloat() * H * 0.09f }
     fun hillY(x: Float) = hill[((x + 4) / 3).roundToInt().coerceIn(0, n - 1)]
+    // The lowest ground under a footprint, so nothing hangs over a dip.
+    fun groundY(x0: Float, x1: Float): Float {
+        var y = hillY(x0)
+        var x = x0
+        while (x < x1) { x += 3f; y = max(y, hillY(x)) }
+        return y
+    }
     ap0.reset(); ap0.moveTo(-4f, H)
     for (i in 0 until n) ap0.lineTo(-4f + i * 3, hill[i])
     ap0.lineTo(-4f + (n - 1) * 3, H); ap0.close()
@@ -174,8 +188,10 @@ private fun Sketch.drawDayArc(t: Float, hNow: Float, rise: Float, set: Float, la
     c.restore()
     // The farm: a house and a barn, lights on after dark.
     val fx = W * if (land) 0.28f else 0.22f
-    val fy = hillY(fx) + U * 0.01f
     val fs = U * 0.05f
+    val fy = groundY(fx - fs * 0.7f, fx + fs * 1.95f) + U * 0.004f
+    // A worn yard under the buildings.
+    ellipse(fx + fs * 0.6f, fy, fs * 1.6f, fs * 0.16f, 0f, tone(0x10162a, 0x5a7a3a))
     val roofC = tone(0x141828, 0xa84a3a)
     rect(fx - fs * 0.6f, fy - fs * 0.6f, fs * 1.2f, fs * 0.6f, tone(0x1c2238, 0xe8dcc8))
     ap1.reset(); ap1.moveTo(fx - fs * 0.7f, fy - fs * 0.6f); ap1.lineTo(fx, fy - fs * 1.1f); ap1.lineTo(fx + fs * 0.7f, fy - fs * 0.6f); ap1.close(); fill(ap1, roofC)
@@ -188,8 +204,9 @@ private fun Sketch.drawDayArc(t: Float, hNow: Float, rise: Float, set: Float, la
     }
     // The windmill on the crest, sails turning slowly.
     val wmx = W * if (land) 0.66f else 0.72f
-    val wmy = hillY(wmx) + U * 0.006f
     val ws = U * 0.07f
+    val wmy = groundY(wmx - ws * 0.3f, wmx + ws * 0.3f) + U * 0.004f
+    ellipse(wmx, wmy, ws * 0.45f, ws * 0.07f, 0f, tone(0x10162a, 0x5a7a3a))
     ap1.reset(); ap1.moveTo(wmx - ws * 0.25f, wmy); ap1.lineTo(wmx - ws * 0.15f, wmy - ws); ap1.lineTo(wmx + ws * 0.15f, wmy - ws); ap1.lineTo(wmx + ws * 0.25f, wmy); ap1.close()
     fill(ap1, tone(0x121828, 0xd8d0c0))
     ap1.reset(); ap1.moveTo(wmx - ws * 0.2f, wmy - ws); ap1.lineTo(wmx, wmy - ws * 1.25f); ap1.lineTo(wmx + ws * 0.2f, wmy - ws); ap1.close()
@@ -204,11 +221,14 @@ private fun Sketch.drawDayArc(t: Float, hNow: Float, rise: Float, set: Float, la
     }
     // A row of poplars along the hill.
     for (i in 0 until 9) {
-        val x = W * (0.45f + i * 0.035f)
-        val y = hillY(x) + U * 0.008f
+        val x = W * (if (land) 0.4f else 0.34f) + i * W * 0.035f
         val th = U * (0.06f + 0.02f * sHash(i.toFloat()))
-        ellipse(x, y - th * 0.55f, th * 0.16f, th * 0.55f, 0f, tone(0x0e1424, 0x3a6a3a))
-        ellipse(x - th * 0.04f, y - th * 0.62f, th * 0.08f, th * 0.4f, 0f, if (L > 0.4f) rgba(0xFFFFDC, 0.12f) else rgba(0xA0AAE6, 0.06f))
+        if (abs(x - wmx) < ws * 0.9f) continue // leave the windmill in the clear
+        val y = groundY(x - th * 0.16f, x + th * 0.16f) + U * 0.006f
+        ellipse(x + th * 0.05f, y, th * 0.2f, th * 0.035f, 0f, rgba(0x0a1018, 0.3f))
+        rect(x - th * 0.022f, y - th * 0.2f, th * 0.044f, th * 0.2f, tone(0x0a0e1a, 0x4a3a2a))
+        ellipse(x, y - th * 0.62f, th * 0.16f, th * 0.52f, 0f, tone(0x0e1424, 0x3a6a3a))
+        ellipse(x - th * 0.04f, y - th * 0.7f, th * 0.08f, th * 0.38f, 0f, if (L > 0.4f) rgba(0xFFFFDC, 0.12f) else rgba(0xA0AAE6, 0.06f))
     }
     // The near meadow: a soft rise, tall grass and a scatter of flowers.
     val mb = H * if (land) 0.8f else 0.74f
