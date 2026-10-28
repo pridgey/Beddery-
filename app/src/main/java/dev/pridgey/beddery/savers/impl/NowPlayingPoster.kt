@@ -355,8 +355,8 @@ internal object Halftone {
         else ink.xfermode = PorterDuffXfermode(PorterDuff.Mode.DARKEN)
 
         val s = sizePx.toFloat()
-        // Coarse enough to see each dot, fine enough to still read the picture.
-        val cell = s / 34f
+        // Fine enough to read the picture clearly, still coarse enough to see the print.
+        val cell = s / 60f
         fun sample(x: Float, y: Float): Int {
             val xi = (x / s * n).toInt().coerceIn(0, n - 1)
             val yi = (y / s * n).toInt().coerceIn(0, n - 1)
