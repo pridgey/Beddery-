@@ -347,12 +347,7 @@ private fun NightSection(settings: AppSettings, viewModel: MainViewModel) {
 @Composable
 private fun NotificationsSection(settings: AppSettings, viewModel: MainViewModel) {
     SectionHeader(stringResource(R.string.section_notifications))
-    SettingsGroup {
-        NotificationSettings(settings, viewModel)
-        SwitchRow(stringResource(R.string.music_takeover), settings.musicTakeover, stringResource(R.string.music_takeover_desc)) { v ->
-            viewModel.update { it.copy(musicTakeover = v) }
-        }
-    }
+    SettingsGroup { NotificationSettings(settings, viewModel) }
 }
 
 /** Options on the Now Playing screensaver's page: it needs notification access to see the music. */
@@ -529,6 +524,10 @@ private fun ShownSection(settings: AppSettings, viewModel: MainViewModel, onOpen
                 }
             },
         )
+        // Also on the Now Playing screen's own page.
+        SwitchRow(stringResource(R.string.music_takeover), settings.musicTakeover, stringResource(R.string.music_takeover_desc)) { v ->
+            viewModel.update { it.copy(musicTakeover = v) }
+        }
     }
 }
 
