@@ -153,7 +153,7 @@ fun rememberArrival(items: List<NotificationItem>): NotificationItem? {
 }
 
 @Composable
-private fun CountedGlyph(app: AppNotifications, size: Dp) {
+internal fun CountedGlyph(app: AppNotifications, size: Dp) {
     Box {
         AppGlyph(app, null, size)
         if (app.items.size > 1) {

@@ -1,7 +1,10 @@
 package dev.pridgey.beddery.savers.impl
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -48,8 +51,11 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -62,12 +68,16 @@ import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import dev.pridgey.beddery.R
 import dev.pridgey.beddery.media.NowPlaying
+import dev.pridgey.beddery.notifications.NotificationItem
 import dev.pridgey.beddery.savers.SaverContext
 import kotlin.math.roundToInt
 
 private val CInk = Color(0xFFE9E4D8)
 private val CMuted = Color(0xFF8A8592)
 private val CPaper = Color(0xFFF1E9D6)
+private val Lcd = Color(0xFF7CF5C4)
+private val TapeColor = Color(0xF2E6D8AE)
+private val TapeInk = Color(0xFF2B2420)
 
 /** A clear cassette over the album art; the tape winds from one reel to the other as the song plays. */
 @Composable
@@ -76,6 +86,7 @@ internal fun CassetteStyle(ctx: SaverContext, track: NowPlaying, transport: Tran
     val pos = rememberPositionMs(track)
     val p = track.fraction(pos)
     val hubs = rememberSpin(track.playing && !ctx.preview, 160f)
+    val notices = rememberNotices(ctx)
 
     BoxWithConstraints(
         Modifier.fillMaxSize().drawBehind {
@@ -86,10 +97,10 @@ internal fun CassetteStyle(ctx: SaverContext, track: NowPlaying, transport: Tran
         if (maxWidth > maxHeight) {
             val tapeW = min(maxWidth * 0.5f, (maxHeight - 56.dp) * (350f / 224f))
             Row(Modifier.fillMaxSize().padding(horizontal = 36.dp, vertical = 24.dp), verticalAlignment = Alignment.CenterVertically) {
-                Cassette(track, p, hubs, accent, tapeW)
+                TapeWithNote(track, p, hubs, accent, tapeW, notices)
                 Spacer(Modifier.width(36.dp))
                 Column(Modifier.weight(1f)) {
-                    CassetteTop(ctx)
+                    CassetteTop(ctx, notices)
                     Spacer(Modifier.height(18.dp))
                     CassetteInfo(track, 22f)
                     Spacer(Modifier.height(14.dp))
@@ -101,9 +112,9 @@ internal fun CassetteStyle(ctx: SaverContext, track: NowPlaying, transport: Tran
         } else {
             val tapeW = maxWidth - 40.dp
             Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 36.dp)) {
-                CassetteTop(ctx)
+                CassetteTop(ctx, notices)
                 Spacer(Modifier.weight(0.7f))
-                Cassette(track, p, hubs, accent, tapeW)
+                TapeWithNote(track, p, hubs, accent, tapeW, notices)
                 Spacer(Modifier.weight(0.6f))
                 CassetteInfo(track, 26f)
                 Spacer(Modifier.height(22.dp))
@@ -116,26 +127,100 @@ internal fun CassetteStyle(ctx: SaverContext, track: NowPlaying, transport: Tran
 }
 
 @Composable
-private fun CassetteTop(ctx: SaverContext) {
+private fun CassetteTop(ctx: SaverContext, notices: Notices) {
     val (time, ampm) = clockParts(ctx)
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            Modifier
-                .background(Color(0xFF06120F), RoundedCornerShape(6.dp))
-                .border(1.dp, Color(0xFF2A2830), RoundedCornerShape(6.dp))
-                .padding(horizontal = 12.dp, vertical = 3.dp),
-        ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .background(Color(0xFF06120F), RoundedCornerShape(6.dp))
+                    .border(1.dp, Color(0xFF2A2830), RoundedCornerShape(6.dp))
+                    .padding(horizontal = 12.dp, vertical = 3.dp),
+            ) {
+                Text(
+                    time + (ampm?.let { " $it" } ?: ""),
+                    style = TextStyle(
+                        fontFamily = FontFamily.Monospace, fontSize = 26.sp, color = Color(0xFF7CF5C4),
+                        shadow = Shadow(Color(0xAA7CF5C4), blurRadius = 16f),
+                    ),
+                )
+            }
+            AnimatedVisibility(notices.waiting, enter = fadeIn(tween(800)), exit = fadeOut(tween(800))) {
+                NewCounter(notices)
+            }
+        }
+        // The deck's small print steps aside for the notification counter.
+        AnimatedVisibility(!notices.waiting, enter = fadeIn(tween(800)), exit = fadeOut(tween(300))) {
             Text(
-                time + (ampm?.let { " $it" } ?: ""),
-                style = TextStyle(
-                    fontFamily = FontFamily.Monospace, fontSize = 26.sp, color = Color(0xFF7CF5C4),
-                    shadow = Shadow(Color(0xAA7CF5C4), blurRadius = 16f),
-                ),
+                "AUTO REVERSE ⇄\nDOLBY B NR · TYPE II", color = CMuted, fontSize = 10.sp, lineHeight = 16.sp, letterSpacing = 1.5.sp,
+                fontFamily = FontFamily.Monospace, textAlign = androidx.compose.ui.text.style.TextAlign.End,
             )
         }
+    }
+}
+
+/** A second display on the deck counting waiting notifications, like a tape counter. */
+@Composable
+private fun NewCounter(notices: Notices) {
+    val label = noticeCountLabel(notices)
+    Box(
+        Modifier
+            .background(Color(0xFF06120F), RoundedCornerShape(6.dp))
+            .border(1.dp, Color(0xFF2A2830), RoundedCornerShape(6.dp))
+            .padding(horizontal = 10.dp, vertical = 7.dp)
+            .clearAndSetSemantics { contentDescription = label },
+    ) {
         Text(
-            "AUTO REVERSE ⇄\nDOLBY B NR · TYPE II", color = CMuted, fontSize = 10.sp, lineHeight = 16.sp, letterSpacing = 1.5.sp,
-            fontFamily = FontFamily.Monospace, textAlign = androidx.compose.ui.text.style.TextAlign.End,
+            "NEW %02d".format(notices.count.coerceAtMost(99)),
+            style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 13.sp, color = Lcd, letterSpacing = 1.sp, shadow = Shadow(Lcd.copy(alpha = 0.67f), blurRadius = 12f)),
+        )
+    }
+}
+
+/** The cassette, with a new notification written on a strip of masking tape stuck across it. */
+@Composable
+private fun TapeWithNote(track: NowPlaying, p: Float, hubs: State<Float>, accent: Color, width: Dp, notices: Notices) {
+    Box {
+        Cassette(track, p, hubs, accent, width)
+        ArrivalCard(notices, Modifier.align(Alignment.BottomCenter).offset(y = width * 0.02f)) { item ->
+            MaskingTape(notices, item, width * 0.86f)
+        }
+    }
+}
+
+@Composable
+private fun MaskingTape(notices: Notices, item: NotificationItem, width: Dp) {
+    val (head, body) = noticeLines(notices, item)
+    Column(
+        Modifier
+            .width(width)
+            .rotate(-2.5f)
+            .drawBehind {
+                // Torn ends: small zigzags at the left and right.
+                val w = size.width
+                val h = size.height
+                val teeth = 8
+                val tear = 5.dp.toPx()
+                val path = Path().apply {
+                    moveTo(0f, 0f)
+                    lineTo(w, 0f)
+                    for (i in 0..teeth) lineTo(if (i % 2 == 0) w else w - tear, h * i / teeth)
+                    lineTo(0f, h)
+                    for (i in teeth downTo 0) lineTo(if (i % 2 == 0) 0f else tear, h * i / teeth)
+                    close()
+                }
+                translate(top = 3.dp.toPx()) { drawPath(path, Color(0x33000000)) }
+                drawPath(path, TapeColor)
+            }
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+    ) {
+        Text(
+            "MEMO · " + item.appName.uppercase(), color = TapeInk.copy(alpha = 0.6f), fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold,
+            fontSize = 9.sp, letterSpacing = 2.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            listOfNotNull(head, body).joinToString(": ").lowercase(), color = TapeInk, fontFamily = PermanentMarker, fontSize = 17.sp, lineHeight = 21.sp,
+            maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp),
         )
     }
 }

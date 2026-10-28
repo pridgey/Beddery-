@@ -5,6 +5,7 @@ import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Shader
 import android.os.SystemClock
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -15,6 +16,10 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -37,6 +42,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -89,17 +95,20 @@ import dev.pridgey.beddery.media.ArtColors
 import dev.pridgey.beddery.media.NowPlaying
 import dev.pridgey.beddery.media.NowPlayingStore
 import dev.pridgey.beddery.media.rememberNowPlaying
+import dev.pridgey.beddery.notifications.NotificationItem
 import dev.pridgey.beddery.notifications.NotificationStore
+import dev.pridgey.beddery.savers.AppGlyph
+import dev.pridgey.beddery.savers.CountedGlyph
 import dev.pridgey.beddery.savers.SaverContext
 import dev.pridgey.beddery.savers.TabularNumbers
 import dev.pridgey.beddery.savers.amPm
 import dev.pridgey.beddery.savers.formatClock
 import dev.pridgey.beddery.savers.formatLongDate
-import kotlinx.coroutines.delay
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.sin
+import kotlinx.coroutines.delay
 
 private val Ground = Color(0xFF09080E)
 private val NoArt = Color(0xFF2A2547)
@@ -160,6 +169,7 @@ val NowPlayingStyles: List<Pair<String, Int>> = listOf(
 /** Blurred art behind a large cover, with the track and controls below. */
 @Composable
 private fun ClassicStyle(ctx: SaverContext, track: NowPlaying, transport: Transport) {
+    val notices = rememberNotices(ctx)
     Box(Modifier.fillMaxSize()) {
         Backdrop(track.art, still = ctx.preview)
         BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -173,6 +183,7 @@ private fun ClassicStyle(ctx: SaverContext, track: NowPlaying, transport: Transp
                     Spacer(Modifier.width(48.dp))
                     Column(Modifier.weight(1f).height(art)) {
                         Clock(ctx, 36.sp)
+                        ClassicNotices(notices, Modifier.padding(top = 12.dp))
                         Spacer(Modifier.weight(1f))
                         TrackInfo(track, titleSize = 30.sp, showAlbum = true)
                         Spacer(Modifier.height(22.dp))
@@ -188,6 +199,7 @@ private fun ClassicStyle(ctx: SaverContext, track: NowPlaying, transport: Transp
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Clock(ctx, 40.sp, Modifier.width(art))
+                    ClassicNotices(notices, Modifier.width(art).padding(top = 12.dp))
                     Spacer(Modifier.weight(1f))
                     ArtCard(track, art)
                     Spacer(Modifier.height(36.dp))
@@ -206,6 +218,52 @@ private fun ClassicStyle(ctx: SaverContext, track: NowPlaying, transport: Transp
 }
 
 // ---------------------------------------------------------------- Pieces
+
+/** App icons under the clock; when something arrives, its icon widens into a pill with the message. */
+@Composable
+private fun ClassicNotices(notices: Notices, modifier: Modifier = Modifier) {
+    var last by remember { mutableStateOf<NotificationItem?>(null) }
+    notices.arrival?.let { last = it }
+    val arrivingApp = notices.arrival?.packageName
+    Row(modifier.height(34.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        AnimatedVisibility(
+            notices.arrival != null,
+            enter = fadeIn(tween(400)) + expandHorizontally(spring(stiffness = 300f), expandFrom = Alignment.Start),
+            exit = fadeOut(tween(500)) + shrinkHorizontally(tween(600), shrinkTowards = Alignment.Start),
+        ) {
+            last?.let { NoticePill(notices, it) }
+        }
+        notices.apps.take(5).forEach { app ->
+            // The arriving app's icon is the pill for now.
+            AnimatedVisibility(
+                app.packageName != arrivingApp,
+                enter = fadeIn(tween(600)) + expandHorizontally(tween(500)),
+                exit = fadeOut(tween(300)) + shrinkHorizontally(tween(400)),
+            ) {
+                Box(Modifier.padding(end = 6.dp)) { CountedGlyph(app, 26.dp) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NoticePill(notices: Notices, item: NotificationItem) {
+    val (head, body) = noticeLines(notices, item)
+    Row(
+        Modifier
+            .widthIn(max = 320.dp)
+            .height(34.dp)
+            .background(Color(0xB80C101A), CircleShape)
+            .border(1.dp, Color.White.copy(alpha = 0.08f), CircleShape)
+            .padding(start = 4.dp, end = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        AppGlyph(null, item, 26.dp)
+        Text(head, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 120.dp))
+        if (body != null) Text(body, color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
 
 /** The art's tiny blurred copy, stretched past the edges and drifting slowly, under a dark wash. */
 @Composable
