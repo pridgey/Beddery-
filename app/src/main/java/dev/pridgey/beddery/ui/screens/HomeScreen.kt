@@ -1,5 +1,7 @@
 package dev.pridgey.beddery.ui.screens
 
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -84,6 +86,9 @@ import dev.pridgey.beddery.system.Updater
 import dev.pridgey.beddery.system.showsBanner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
+/** How long the gallery must sit still before thumbnails are drawn again. */
+private const val STILL_SETTLE_MS = 450L
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(settings: AppSettings, viewModel: MainViewModel, onOpenSaver: (String) -> Unit) {
@@ -144,7 +149,17 @@ private fun GalleryTab(
     val update by Updater.state.collectAsStateWithLifecycle()
     val grid = rememberLazyGridState()
     val stills = remember { StillScheduler() }
-    LaunchedEffect(grid) { snapshotFlow { grid.isScrollInProgress }.collect { stills.paused = it } }
+    LaunchedEffect(grid) {
+        snapshotFlow { grid.isScrollInProgress }.collectLatest { scrolling ->
+            if (scrolling) {
+                stills.paused = true
+            } else {
+                // People often flick again right away: wait for the list to settle first.
+                delay(STILL_SETTLE_MS)
+                stills.paused = false
+            }
+        }
+    }
     CompositionLocalProvider(LocalStillScheduler provides stills) {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(152.dp),

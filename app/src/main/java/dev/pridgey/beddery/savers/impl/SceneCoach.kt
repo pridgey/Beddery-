@@ -159,9 +159,10 @@ private val COACH_STICKERS = mapOf(
     ),
 )
 
-private val Fraunces = FontFamily(
+internal val Fraunces = FontFamily(
     Font(R.font.fraunces, FontWeight.Light, variationSettings = FontVariation.Settings(FontVariation.weight(300))),
     Font(R.font.fraunces, FontWeight.Normal, variationSettings = FontVariation.Settings(FontVariation.weight(400))),
+    Font(R.font.fraunces, FontWeight.SemiBold, variationSettings = FontVariation.Settings(FontVariation.weight(600))),
     Font(R.font.fraunces_italic, FontWeight.Normal, FontStyle.Italic, variationSettings = FontVariation.Settings(FontVariation.weight(420))),
 )
 

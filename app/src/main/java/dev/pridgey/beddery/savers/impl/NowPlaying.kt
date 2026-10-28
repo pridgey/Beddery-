@@ -104,13 +104,13 @@ import kotlin.math.sin
 private val Ground = Color(0xFF09080E)
 private val NoArt = Color(0xFF2A2547)
 
-private interface Transport {
+internal interface Transport {
     fun playPause()
     fun next()
     fun previous()
 }
 
-private object LiveTransport : Transport {
+internal object LiveTransport : Transport {
     override fun playPause() = NowPlayingStore.playPause()
     override fun next() = NowPlayingStore.next()
     override fun previous() = NowPlayingStore.previous()
@@ -132,6 +132,35 @@ fun NowPlayingSaver(ctx: SaverContext) {
             NothingPlaying(ctx)
             return@Box
         }
+        when (ctx.settings.nowPlayingStyle) {
+            "vinyl" -> VinylStyle(ctx, track, transport)
+            "cassette" -> CassetteStyle(ctx, track, transport)
+            "aura" -> AuraStyle(ctx, track, transport)
+            "polaroid" -> PolaroidStyle(ctx, track, transport)
+            "poster" -> PosterStyle(ctx, track, transport)
+            "mosaic" -> MosaicStyle(ctx, track, transport)
+            "line" -> OneLineStyle(ctx, track, transport)
+            else -> ClassicStyle(ctx, track, transport)
+        }
+    }
+}
+
+/** The Now Playing looks, in the order the settings show them. */
+val NowPlayingStyles: List<Pair<String, Int>> = listOf(
+    "classic" to R.string.np_style_classic,
+    "vinyl" to R.string.np_style_vinyl,
+    "cassette" to R.string.np_style_cassette,
+    "aura" to R.string.np_style_aura,
+    "polaroid" to R.string.np_style_polaroid,
+    "poster" to R.string.np_style_poster,
+    "mosaic" to R.string.np_style_mosaic,
+    "line" to R.string.np_style_line,
+)
+
+/** Blurred art behind a large cover, with the track and controls below. */
+@Composable
+private fun ClassicStyle(ctx: SaverContext, track: NowPlaying, transport: Transport) {
+    Box(Modifier.fillMaxSize()) {
         Backdrop(track.art, still = ctx.preview)
         BoxWithConstraints(Modifier.fillMaxSize()) {
             if (maxWidth > maxHeight) {

@@ -59,6 +59,8 @@ data class AppSettings(
     val notificationsAtNight: Boolean = false,
     /** Switch to Now Playing while music plays (needs notification access too). */
     val musicTakeover: Boolean = true,
+    /** Look of the Now Playing screen: classic, vinyl, cassette, aura, polaroid, poster, mosaic or line. */
+    val nowPlayingStyle: String = "classic",
 
     // Night mode
     val nightModeEnabled: Boolean = true,

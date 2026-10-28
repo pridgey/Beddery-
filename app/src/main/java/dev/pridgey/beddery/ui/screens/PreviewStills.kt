@@ -108,7 +108,10 @@ private object StillCache {
     }
 }
 
-/** Takes one picture at a time, in the order cards asked, and waits while the list scrolls. */
+/**
+ * Takes one picture at a time and stays out of the way of scrolling: a scroll stops the picture
+ * being taken (it's retried later), and cards with no picture yet go before clock refreshes.
+ */
 @Stable
 class StillScheduler {
     private val queue = ArrayList<String>()
@@ -117,16 +120,28 @@ class StillScheduler {
     var paused = false
         set(value) {
             field = value
+            if (value) {
+                // Building a full-size screensaver mid-scroll is what made the list hiccup.
+                active?.let { queue.add(0, it) }
+                active = null
+            }
             pump()
         }
 
-    fun request(key: String) {
-        if (key != active && key !in queue) queue += key
+    /** [missing]: the card shows nothing yet, so it jumps ahead of cards that only need a fresher clock. */
+    fun request(key: String, missing: Boolean = false) {
+        if (key == active) return
+        queue.remove(key)
+        if (missing) queue.add(queue.indexOfFirst { it !in missingKeys }.let { if (it < 0) queue.size else it }, key) else queue += key
+        if (missing) missingKeys += key else missingKeys -= key
         pump()
     }
 
+    private val missingKeys = HashSet<String>()
+
     fun release(key: String) {
         queue.remove(key)
+        missingKeys -= key
         if (active == key) {
             active = null
             pump()
@@ -172,7 +187,7 @@ fun SaverStill(
     if (still == null) LaunchedEffect(key) { StillCache.load(dir, key) }
     if (!fresh) {
         DisposableEffect(key, minute) {
-            scheduler.request(key)
+            scheduler.request(key, missing = still == null)
             onDispose { scheduler.release(key) }
         }
     }

@@ -47,6 +47,7 @@ class SettingsRepository private constructor(context: Context) {
         val notifications = stringPreferencesKey("notifications_mode")
         val notificationsNight = booleanPreferencesKey("notifications_night")
         val musicTakeover = booleanPreferencesKey("music_takeover")
+        val nowPlayingStyle = stringPreferencesKey("now_playing_style")
         val previewHint = booleanPreferencesKey("preview_hint")
         val clockFormat = stringPreferencesKey("clock_format")
         val accent = stringPreferencesKey("accent")
@@ -93,6 +94,7 @@ class SettingsRepository private constructor(context: Context) {
             notificationsMode = p[Keys.notifications].toEnum(d.notificationsMode),
             notificationsAtNight = p[Keys.notificationsNight] ?: d.notificationsAtNight,
             musicTakeover = p[Keys.musicTakeover] ?: d.musicTakeover,
+            nowPlayingStyle = p[Keys.nowPlayingStyle] ?: d.nowPlayingStyle,
             previewHintSeen = p[Keys.previewHint] ?: d.previewHintSeen,
             clockFormat = p[Keys.clockFormat].toEnum(d.clockFormat),
             accent = p[Keys.accent].toEnum(d.accent),
@@ -133,6 +135,7 @@ class SettingsRepository private constructor(context: Context) {
         p[Keys.notifications] = s.notificationsMode.name
         p[Keys.notificationsNight] = s.notificationsAtNight
         p[Keys.musicTakeover] = s.musicTakeover
+        p[Keys.nowPlayingStyle] = s.nowPlayingStyle
         p[Keys.previewHint] = s.previewHintSeen
         p[Keys.clockFormat] = s.clockFormat.name
         p[Keys.accent] = s.accent.name

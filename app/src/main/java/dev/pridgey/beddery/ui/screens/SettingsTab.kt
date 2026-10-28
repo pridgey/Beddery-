@@ -1,5 +1,6 @@
 package dev.pridgey.beddery.ui.screens
 
+import dev.pridgey.beddery.savers.impl.NowPlayingStyles
 import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -372,6 +373,22 @@ fun NowPlayingOptions(settings: AppSettings, viewModel: MainViewModel) {
             trailingContent = { TextButton(onClick = { context.tryStart(NotificationStore.settingsIntent(context)) }) { Text(stringResource(R.string.action_allow)) } },
         )
     }
+    ListItem(
+        colors = itemColors,
+        headlineContent = { Text(stringResource(R.string.nowplaying_style)) },
+        supportingContent = {
+            @OptIn(ExperimentalLayoutApi::class)
+            FlowRow(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                NowPlayingStyles.forEach { (id, label) ->
+                    FilterChip(
+                        selected = settings.nowPlayingStyle == id,
+                        onClick = { viewModel.update { it.copy(nowPlayingStyle = id) } },
+                        label = { Text(stringResource(label)) },
+                    )
+                }
+            }
+        },
+    )
     SwitchRow(stringResource(R.string.music_takeover), settings.musicTakeover, stringResource(R.string.music_takeover_desc)) { v ->
         viewModel.update { it.copy(musicTakeover = v) }
     }
