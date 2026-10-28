@@ -45,6 +45,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -158,11 +159,25 @@ private fun PrintedArt(art: Art?, size: Dp, overlap: Dp, modifier: Modifier = Mo
             .size(size),
     ) {
         printed?.second?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds) }
-        // "One night only" sticker, overprinted.
-        Box(Modifier.align(Alignment.TopEnd).offset(x = 8.dp, y = 18.dp).size(size * 0.23f).rotate(12f), contentAlignment = Alignment.Center) {
-            Canvas(Modifier.fillMaxSize()) { drawCircle(Pink) }
-            Text("ONE\nNIGHT\nONLY", color = Blue, fontFamily = Anton, fontSize = (size.value * 0.047f).sp, lineHeight = 1.0.em, textAlign = TextAlign.Center)
+        Sticker(Modifier.align(Alignment.TopEnd).offset(x = 10.dp, y = 14.dp).size(size * 0.25f).rotate(12f), size)
+    }
+}
+
+/** A "one night only" sticker slapped on the print: white die-cut edge, a shadow, a little shine. */
+@Composable
+private fun Sticker(modifier: Modifier, art: Dp) {
+    Box(modifier, contentAlignment = Alignment.Center) {
+        Canvas(Modifier.fillMaxSize()) {
+            val r = size.minDimension / 2
+            val c = center
+            // Shadow, lifted most where the sticker curls away.
+            drawCircle(Color(0x33000000), r * 1.01f, c + Offset(r * 0.06f, r * 0.09f))
+            drawCircle(Color(0xFFFFFAF2), r, c)
+            drawCircle(Pink, r * 0.9f, c)
+            drawCircle(Brush.linearGradient(listOf(Color(0x40FFFFFF), Color.Transparent, Color(0x14000000)), c - Offset(r, r), c + Offset(r, r)), r * 0.9f, c)
+            drawCircle(Color(0xFFFFFAF2), r * 0.8f, c, style = Stroke(r * 0.025f))
         }
+        Text("ONE\nNIGHT\nONLY", color = Color(0xFFFFFAF2), fontFamily = Anton, fontSize = (art.value * 0.045f).sp, lineHeight = 1.0.em, textAlign = TextAlign.Center)
     }
 }
 
@@ -275,7 +290,8 @@ internal object Halftone {
         else ink.xfermode = PorterDuffXfermode(PorterDuff.Mode.DARKEN)
 
         val s = sizePx.toFloat()
-        val cell = s / 53f
+        // Coarse enough to see each dot, fine enough to still read the picture.
+        val cell = s / 34f
         fun sample(x: Float, y: Float): Int {
             val xi = (x / s * n).toInt().coerceIn(0, n - 1)
             val yi = (y / s * n).toInt().coerceIn(0, n - 1)

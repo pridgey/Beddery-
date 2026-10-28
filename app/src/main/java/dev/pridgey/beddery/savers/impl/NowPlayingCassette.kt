@@ -226,7 +226,18 @@ private fun Cassette(track: NowPlaying, p: Float, hubs: State<Float>, accent: Co
     val k = width.value / 350f
     val image = track.art?.image
     val shape = RoundedCornerShape((14 * k).dp)
-    Box(Modifier.size(width, width * (224f / 350f)).shadow((24 * k).dp, shape, ambientColor = Color.Black, spotColor = Color.Black).clip(shape)) {
+    val height = width * (224f / 350f)
+    val depth = (7 * k).dp
+    // A little thickness: the shell's lower edge shows beneath it.
+    Box(Modifier.size(width, height + depth)) {
+    Box(
+        Modifier
+            .offset(y = depth)
+            .size(width, height)
+            .shadow((24 * k).dp, shape, ambientColor = Color.Black, spotColor = Color.Black)
+            .background(Brush.verticalGradient(listOf(Color(0xFF1C1A20), Color(0xFF0A090C))), shape),
+    )
+    Box(Modifier.size(width, height).clip(shape)) {
         Canvas(Modifier.fillMaxSize()) {
             val u = size.width / 350f
             // The J-card art seen through a smoked shell.
@@ -285,6 +296,8 @@ private fun Cassette(track: NowPlaying, p: Float, hubs: State<Float>, accent: Co
                 drawLine(Color(0xFF2A2830), c - Offset(3f * u, 0f), c + Offset(3f * u, 0f), 1.2f * u)
                 drawLine(Color(0xFF2A2830), c - Offset(0f, 3f * u), c + Offset(0f, 3f * u), 1.2f * u)
             }
+            // Bevel: light catching the top edge, shade gathering toward the bottom.
+            drawRect(Brush.verticalGradient(0f to Color(0x2EFFFFFF), 0.05f to Color.Transparent, 0.8f to Color.Transparent, 1f to Color(0x47000000)))
             drawRoundRect(Color(0x24FFFFFF), size = size, cornerRadius = CornerRadius(14f * u), style = Stroke(1.5f))
         }
 
@@ -321,5 +334,6 @@ private fun Cassette(track: NowPlaying, p: Float, hubs: State<Float>, accent: Co
                 modifier = Modifier.offset((14 * k).dp, (52 * k).dp).width((290 * k).dp).rotate(-1f),
             )
         }
+    }
     }
 }

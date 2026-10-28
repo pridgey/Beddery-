@@ -1,5 +1,6 @@
 package dev.pridgey.beddery.savers.impl
 
+import android.graphics.Bitmap
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -39,7 +40,10 @@ import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.ImageShader
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.TileMode
@@ -65,6 +69,7 @@ import dev.pridgey.beddery.savers.SaverContext
 import dev.pridgey.beddery.savers.formatLongDate
 import kotlin.math.PI
 import kotlin.math.cos
+import kotlin.math.hypot
 import kotlin.math.roundToInt
 
 private val AGround = Color(0xFF040507)
@@ -80,6 +85,8 @@ internal fun AuraStyle(ctx: SaverContext, track: NowPlaying, transport: Transpor
     val artScale by animateFloatAsState(if (track.playing) 1f else 0.92f, tween(1200), label = "art")
     val pos = rememberPositionMs(track)
     val p = track.fraction(pos)
+    // The glow layers fade to nothing at their own edges, so turning and stretching them never shows a line.
+    val glowImage = remember(track.art?.key) { track.art?.backdrop?.let(::softEdged) }
     var artCenter by remember { mutableStateOf(Offset.Unspecified) }
     var origin by remember { mutableStateOf(Offset.Zero) }
 
@@ -93,7 +100,7 @@ internal fun AuraStyle(ctx: SaverContext, track: NowPlaying, transport: Transpor
             val t = clock.value
             val breathe = 0.5f - 0.5f * cos(t * 2f * PI.toFloat() / 16f)
             val drift = 0.5f - 0.5f * cos(t * 2f * PI.toFloat() / 23f)
-            val back = track.art?.backdrop
+            val back = glowImage
             // The glow is drawn in its own layer, then faded out with a soft round mask so no edges show.
             drawIntoCanvas { it.saveLayer(Rect(Offset.Zero, size), Paint()) }
             if (back == null) {
@@ -173,7 +180,7 @@ private fun FeatheredArt(track: NowPlaying, accent: Color, size: Dp, scale: Floa
             drawRect(Brush.linearGradient(listOf(accent, AGround)))
         }
         drawRect(
-            Brush.radialGradient(0f to Color.Black, 0.62f to Color.Black, 1f to Color.Transparent, center = center, radius = this.size.width * 0.6f),
+            Brush.radialGradient(0f to Color.Black, 0.45f to Color.Black, 0.75f to Color.Black.copy(alpha = 0.55f), 1f to Color.Transparent, center = center, radius = this.size.width * 0.55f),
             blendMode = BlendMode.DstIn,
         )
         drawIntoCanvas { it.restore() }
@@ -232,4 +239,24 @@ private fun AuraControls(track: NowPlaying, transport: Transport, accent: Color,
             Icon(Icons.Rounded.SkipNext, null, tint = ASoft, modifier = Modifier.size(24.dp))
         }
     }
+}
+
+/** A copy of [src] whose alpha falls smoothly to zero toward a circle's edge. */
+private fun softEdged(src: ImageBitmap): ImageBitmap {
+    val n = 64
+    val source = src.asAndroidBitmap().let { if (it.config == Bitmap.Config.HARDWARE) it.copy(Bitmap.Config.ARGB_8888, false) else it }
+    val scaled = Bitmap.createScaledBitmap(source, n, n, true)
+    val px = IntArray(n * n)
+    scaled.getPixels(px, 0, n, 0, 0, n, n)
+    val half = n / 2f
+    for (y in 0 until n) {
+        for (x in 0 until n) {
+            val d = hypot(x + 0.5f - half, y + 0.5f - half) / half
+            val t = ((1f - d) / 0.55f).coerceIn(0f, 1f)
+            val a = (t * t * (3f - 2f * t) * 255).toInt()
+            val i = y * n + x
+            px[i] = (a shl 24) or (px[i] and 0xFFFFFF)
+        }
+    }
+    return Bitmap.createBitmap(px, n, n, Bitmap.Config.ARGB_8888).asImageBitmap()
 }

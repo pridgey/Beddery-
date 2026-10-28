@@ -68,17 +68,16 @@ private val MText = Color(0xFFF4ECF4)
 private val MMuted = Color(0xFF9C8DB5)
 private val MTile = Color(0xFF231B38)
 
-/** The order pieces arrive in: scattered, so the picture builds up all over. */
-private val PieceOrder = intArrayOf(5, 10, 0, 15, 6, 3, 12, 9, 1, 14, 7, 8, 2, 13, 4, 11)
+/** Each tile's resting opacity: a loose spread, so the picture reads as one but no two tiles match. */
+private val TileShade = floatArrayOf(1f, 0.62f, 0.85f, 0.5f, 0.74f, 0.95f, 0.58f, 0.88f, 0.9f, 0.55f, 1f, 0.68f, 0.6f, 0.82f, 0.7f, 0.97f)
 
-/** The cover as sixteen tiles that light up one by one, so the picture is whole when the song ends. */
+/** The cover cut into sixteen tiles of slightly different strengths, each drifting on its own. */
 @Composable
 internal fun MosaicStyle(ctx: SaverContext, track: NowPlaying, transport: Transport) {
     val accent = track.art?.accent ?: Color(0xFFF2A3C2)
     val pos = rememberPositionMs(track)
     val p = track.fraction(pos)
     val clock = rememberClock(track.playing && !ctx.preview)
-    val pulse = rememberInfiniteTransition(label = "pulse").animateFloat(0f, 1f, infiniteRepeatable(tween(1200), RepeatMode.Reverse), label = "p")
 
     BoxWithConstraints(
         Modifier.fillMaxSize().drawBehind {
@@ -89,10 +88,10 @@ internal fun MosaicStyle(ctx: SaverContext, track: NowPlaying, transport: Transp
         if (maxWidth > maxHeight) {
             val grid = maxHeight - 56.dp
             Row(Modifier.fillMaxSize().padding(horizontal = 36.dp, vertical = 28.dp), verticalAlignment = Alignment.CenterVertically) {
-                Tiles(track, p, clock, pulse, grid)
+                Tiles(track, clock, grid)
                 Spacer(Modifier.width(36.dp))
                 Column(Modifier.weight(1f)) {
-                    MosaicHeader(ctx, track, p)
+                    MosaicHeader(ctx, track)
                     Spacer(Modifier.weight(1f))
                     MosaicInfo(track, pos)
                     Spacer(Modifier.height(18.dp))
@@ -102,9 +101,9 @@ internal fun MosaicStyle(ctx: SaverContext, track: NowPlaying, transport: Transp
         } else {
             val grid = min(maxWidth - 48.dp, maxHeight * 0.42f)
             Column(Modifier.fillMaxSize().padding(start = 24.dp, end = 24.dp, top = 40.dp, bottom = 36.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                MosaicHeader(ctx, track, p)
+                MosaicHeader(ctx, track)
                 Spacer(Modifier.weight(0.6f))
-                Tiles(track, p, clock, pulse, grid)
+                Tiles(track, clock, grid)
                 Spacer(Modifier.weight(0.5f))
                 Column(Modifier.width(grid)) { MosaicInfo(track, pos) }
                 Spacer(Modifier.weight(1f))
@@ -115,7 +114,7 @@ internal fun MosaicStyle(ctx: SaverContext, track: NowPlaying, transport: Transp
 }
 
 @Composable
-private fun MosaicHeader(ctx: SaverContext, track: NowPlaying, p: Float) {
+private fun MosaicHeader(ctx: SaverContext, track: NowPlaying) {
     val (time, _) = clockParts(ctx)
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
         Column {
@@ -124,49 +123,27 @@ private fun MosaicHeader(ctx: SaverContext, track: NowPlaying, p: Float) {
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(track.appName, color = MMuted, fontSize = 12.sp, maxLines = 1)
-            if (track.durationMs > 0) {
-                val accent = track.art?.accent ?: Color(0xFFF2A3C2)
-                Text(
-                    buildAnnotatedString {
-                        withStyle(SpanStyle(color = accent)) { append(floor(p * 16).toInt().toString()) }
-                        append(" of 16 pieces")
-                    },
-                    color = MMuted, fontSize = 12.sp, textAlign = TextAlign.End, modifier = Modifier.padding(top = 4.dp),
-                )
-            }
         }
     }
 }
 
 @Composable
-private fun Tiles(track: NowPlaying, p: Float, clock: State<Float>, pulse: State<Float>, size: Dp) {
+private fun Tiles(track: NowPlaying, clock: State<Float>, size: Dp) {
     val image = track.art?.image
-    val live = track.durationMs > 0
     Canvas(Modifier.size(size)) {
         val s = this.size.width
         val gap = 5.dp.toPx()
         val cell = (s - gap * 3) / 4
         val radius = CornerRadius(6.dp.toPx())
-        // Without a song length, show the whole picture.
-        val done = if (live) p * 16f else 16f
-        val step = floor(done).toInt().coerceAtMost(15)
         val t = clock.value
         for (k in 0 until 16) {
-            val rank = PieceOrder.indexOf(k)
             val x = (k % 4) * (cell + gap)
             val y = (k / 4) * (cell + gap)
-            // Each piece drifts on its own slow loop.
+            // Each tile drifts and breathes on its own slow loop.
             val period = 6f + (k * 7) % 5
             val ph = t * 2f * PI.toFloat() / period + k
             val o = Offset(x + sin(ph) * 1.8.dp.toPx(), y + cos(ph * 0.8f) * 2.dp.toPx())
-            val (filter, alpha) = when {
-                !live || rank < step -> null to 1f
-                rank == step -> {
-                    val f = done - step
-                    grayscale(1f - f, 0.4f + 0.6f * f) to 0.6f + 0.4f * f
-                }
-                else -> grayscale(1f, 0.38f) to 0.55f
-            }
+            val alpha = (TileShade[k] + 0.08f * sin(t * 2f * PI.toFloat() / (17f + k % 5) + k * 1.7f)).coerceIn(0.4f, 1f)
             clipPath(Path().apply { addRoundRect(RoundRect(o.x, o.y, o.x + cell, o.y + cell, radius)) }) {
                 if (image != null) {
                     val sx = image.width / s
@@ -177,14 +154,11 @@ private fun Tiles(track: NowPlaying, p: Float, clock: State<Float>, pulse: State
                         srcSize = IntSize((cell * sx).roundToInt().coerceAtLeast(1), (cell * sy).roundToInt().coerceAtLeast(1)),
                         dstOffset = IntOffset(o.x.roundToInt(), o.y.roundToInt()),
                         dstSize = IntSize(cell.roundToInt(), cell.roundToInt()),
-                        alpha = alpha, colorFilter = filter, filterQuality = FilterQuality.Medium,
+                        alpha = alpha, filterQuality = FilterQuality.Medium,
                     )
                 } else {
                     drawRect(MTile, o, Size(cell, cell), alpha = alpha)
                 }
-            }
-            if (live && rank == step && track.playing) {
-                drawRoundRect(Color.White.copy(alpha = 0.55f * pulse.value), o, Size(cell, cell), radius, style = Stroke(2.dp.toPx()))
             }
         }
     }
