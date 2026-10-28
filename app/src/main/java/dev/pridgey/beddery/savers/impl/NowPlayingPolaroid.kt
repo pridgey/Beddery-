@@ -185,7 +185,11 @@ private fun StickyNote(notices: Notices, item: NotificationItem, k: Float) {
                 .background(Brush.verticalGradient(listOf(NoteTop, NoteBottom)))
                 .padding(start = (14 * k).dp, end = (14 * k).dp, top = (18 * k).dp, bottom = (12 * k).dp),
         ) {
-            Text(head, color = PPen, fontFamily = Caveat, fontWeight = FontWeight.Bold, fontSize = 25f.scaledSp(k), lineHeight = 1.em, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy((6 * k).dp)) {
+                // The app's icon inked beside the name, a little askew like a quick doodle.
+                Box(Modifier.rotate(-8f)) { NoticeGlyph(item, null, PPen.copy(alpha = 0.85f), (20 * k).dp) }
+                Text(head, color = PPen, fontFamily = Caveat, fontWeight = FontWeight.Bold, fontSize = 25f.scaledSp(k), lineHeight = 1.em, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
             if (body != null) {
                 Text(
                     body, color = PPen, fontFamily = Caveat, fontWeight = FontWeight.Medium, fontSize = 23f.scaledSp(k), lineHeight = 1.05.em,
@@ -205,8 +209,13 @@ private fun NotePile(notices: Notices, k: Float) {
     Box(Modifier.size(note).clearAndSetSemantics { contentDescription = label }) {
         Box(Modifier.fillMaxSize().rotate(-6f).shadow((6 * k).dp, RectangleShape).background(Color(0xFFE0C877)))
         Box(Modifier.fillMaxSize().rotate(3f).background(Color(0xFFEAD38A)))
-        Box(Modifier.fillMaxSize().rotate(8f).background(Brush.verticalGradient(listOf(NoteTop, NoteBottom))), contentAlignment = Alignment.Center) {
-            Text("${notices.count} new", color = PPen, fontFamily = Caveat, fontWeight = FontWeight.Bold, fontSize = 24f.scaledSp(k))
+        Column(
+            Modifier.fillMaxSize().rotate(8f).background(Brush.verticalGradient(listOf(NoteTop, NoteBottom))),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            NoticeGlyphs(notices, PPen.copy(alpha = 0.85f), (14 * k).dp, (4 * k).dp)
+            Text("${notices.count} new", color = PPen, fontFamily = Caveat, fontWeight = FontWeight.Bold, fontSize = 22f.scaledSp(k), lineHeight = 1.em)
         }
     }
 }

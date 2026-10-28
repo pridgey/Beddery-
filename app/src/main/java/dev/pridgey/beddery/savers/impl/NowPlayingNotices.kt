@@ -8,6 +8,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -16,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -84,6 +87,14 @@ internal fun NoticeGlyph(item: NotificationItem?, app: AppNotifications?, tint: 
         Image(icon, null, Modifier.size(size), colorFilter = ColorFilter.tint(tint))
     } else {
         Icon(fallbackGlyph(item?.packageName ?: app?.packageName.orEmpty()), null, Modifier.size(size), tint = tint)
+    }
+}
+
+/** The icons of the first [max] apps with notifications waiting, side by side. */
+@Composable
+internal fun NoticeGlyphs(notices: Notices, tint: Color, size: Dp, gap: Dp, max: Int = 3) {
+    Row(horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.CenterVertically) {
+        notices.apps.take(max).forEach { NoticeGlyph(null, it, tint, size) }
     }
 }
 

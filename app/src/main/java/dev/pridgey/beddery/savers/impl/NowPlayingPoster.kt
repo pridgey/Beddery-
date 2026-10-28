@@ -182,7 +182,10 @@ private fun Flyer(notices: Notices, item: NotificationItem, width: Dp) {
                 .background(Blue)
                 .padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = 14.dp),
         ) {
-            Text(item.appName.uppercase() + " · NOW", color = Color(0xFFFF8DB3), fontFamily = Anton, fontSize = 13.sp, letterSpacing = 2.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                NoticeGlyph(item, null, Color(0xFFFF8DB3), 15.dp)
+                Text(item.appName.uppercase() + " · NOW", color = Color(0xFFFF8DB3), fontFamily = Anton, fontSize = 13.sp, letterSpacing = 2.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
             Text(head.uppercase(), color = Paper, fontFamily = Anton, fontSize = 30.sp, lineHeight = 1.05.em, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))
             if (body != null) {
                 Text(body, color = Paper, fontSize = 14.sp, fontWeight = FontWeight.Medium, lineHeight = 19.sp, maxLines = 3, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
@@ -215,7 +218,8 @@ private fun WaitingStamp(notices: Notices, modifier: Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text("${notices.count} NEW", color = Pink, fontFamily = Anton, fontSize = 18.sp, lineHeight = 1.em)
-        Text("UNREAD", color = Pink, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.5.sp)
+        // Who they're from, stamped in the same pink ink.
+        Box(Modifier.padding(top = 3.dp)) { NoticeGlyphs(notices, Pink, 13.dp, 4.dp) }
     }
 }
 
@@ -315,7 +319,7 @@ private fun PosterStub(track: NowPlaying, transport: Transport, notices: Notices
             NpButton(stringResource(if (track.playing) R.string.nowplaying_pause else R.string.nowplaying_play), transport::playPause, Modifier.weight(1.4f).height(62.dp).background(Blue), RectangleShape, Stub) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     PlayPauseIcon(track.playing, Stub, 26.dp)
-                    Text(if (track.playing) "PAUSE" else "PLAY", color = Stub, fontFamily = Anton, fontSize = 20.sp, letterSpacing = 1.5.sp)
+                    Text(if (track.playing) "PAUSE" else "PLAY", color = Stub, fontFamily = Anton, fontSize = 20.sp, letterSpacing = 1.5.sp, maxLines = 1, softWrap = false)
                 }
             }
             NpButton(stringResource(R.string.nowplaying_next), transport::next, Modifier.weight(1f).height(62.dp).border(2.5.dp, Blue, RectangleShape), RectangleShape, Blue, track.canNext) {
@@ -326,7 +330,7 @@ private fun PosterStub(track: NowPlaying, transport: Transport, notices: Notices
                 Canvas(Modifier.padding(start = 4.dp).width(2.dp).height(62.dp)) {
                     drawLine(Blue.copy(alpha = 0.35f), Offset(size.width / 2, 0f), Offset(size.width / 2, size.height), size.width, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx())))
                 }
-                Box(Modifier.width(88.dp).height(62.dp), contentAlignment = Alignment.Center) {
+                Box(Modifier.width(76.dp).height(62.dp), contentAlignment = Alignment.Center) {
                     WaitingStamp(notices, Modifier)
                 }
             }

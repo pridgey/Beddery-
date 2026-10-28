@@ -1,5 +1,14 @@
 package dev.pridgey.beddery.savers.impl
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -48,6 +57,7 @@ import kotlin.math.sin
 
 private val LText = Color(0xFFECE8E0)
 private val LMuted = Color(0xFF8A857B)
+private val LIcon = Color(0xFFB8B2A7)
 
 /** One sentence on true black, drifting slowly so nothing stays in one place on the screen. */
 @Composable
@@ -93,35 +103,31 @@ internal fun OneLineStyle(ctx: SaverContext, track: NowPlaying, transport: Trans
                     drawCircle(accent, 2.5.dp.toPx(), Offset(size.width * p, y))
                 }
             }
-            // While notifications wait, the sentence mentions them.
-            val waiting = notices.waiting && notices.arrival == null
             Text(
-                buildAnnotatedString {
-                    append(progressWords(track, pos))
-                    if (waiting) {
-                        append(", and ")
-                        withStyle(SpanStyle(color = accent)) { append(sayCount(notices.count)) }
-                        append(if (notices.count == 1) " is waiting" else " are waiting")
-                    }
-                },
+                progressWords(track, pos),
                 color = LMuted, fontFamily = InstrumentSerif, fontStyle = FontStyle.Italic, fontSize = 15.sp,
                 modifier = Modifier.padding(top = 12.dp),
             )
+            // While notifications wait, a line of their own names the apps by their icons.
+            AnimatedVisibility(notices.waiting, enter = fadeIn(tween(900)) + expandVertically(tween(600)), exit = fadeOut(tween(600)) + shrinkVertically(tween(600))) {
+                WaitingLine(notices, accent)
+            }
             // A new one gets a sentence of its own.
             ArrivalCard(notices) { item ->
                 val reveal = notices.reveals(item)
                 Text(
                     buildAnnotatedString {
                         append("Just now, ")
+                        if (!reveal) append("something new in ")
+                        appendInlineContent(ARRIVAL_ICON)
+                        withStyle(SpanStyle(color = accent)) { append(if (reveal) item.title ?: item.appName else item.appName) }
                         if (reveal) {
-                            withStyle(SpanStyle(color = accent)) { append(item.title ?: item.appName) }
                             item.text?.let { withStyle(SpanStyle(fontStyle = FontStyle.Italic)) { append(": \u201C$it\u201D") } }
                         } else {
-                            append("something new in ")
-                            withStyle(SpanStyle(color = accent)) { append(item.appName) }
                             append(".")
                         }
                     },
+                    inlineContent = mapOf(ARRIVAL_ICON to inlineGlyph(1.05f) { NoticeGlyph(item, null, accent, 19.dp) }),
                     color = LText, fontFamily = InstrumentSerif, fontSize = 24.sp, lineHeight = 1.2.em, maxLines = 3, overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 18.dp),
                 )
@@ -145,6 +151,31 @@ internal fun OneLineStyle(ctx: SaverContext, track: NowPlaying, transport: Trans
         }
     }
 }
+
+private const val ARRIVAL_ICON = "arrival"
+private const val MAX_INLINE_ICONS = 4
+
+/** "four notifications are waiting, from [chat] [mail] [calendar]" */
+@Composable
+private fun WaitingLine(notices: Notices, accent: Color) {
+    val apps = notices.apps.take(MAX_INLINE_ICONS)
+    Text(
+        buildAnnotatedString {
+            withStyle(SpanStyle(color = accent)) { append(sayCount(notices.count)) }
+            append(if (notices.count == 1) " is waiting, from " else " are waiting, from ")
+            apps.forEachIndexed { i, _ -> appendInlineContent("app$i") }
+            if (notices.apps.size > apps.size) append(" and others")
+        },
+        inlineContent = apps.withIndex().associate { (i, app) -> "app$i" to inlineGlyph(1.35f) { NoticeGlyph(null, app, LIcon, 14.dp) } },
+        color = LMuted, fontFamily = InstrumentSerif, fontStyle = FontStyle.Italic, fontSize = 15.sp,
+        modifier = Modifier.padding(top = 6.dp),
+    )
+}
+
+/** Room in a line of text for an icon, [width] ems wide, centred on the letters. */
+private fun inlineGlyph(width: Float, glyph: @Composable () -> Unit) = InlineTextContent(
+    Placeholder(width.em, 1.em, PlaceholderVerticalAlign.TextCenter),
+) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { glyph() } }
 
 /** "a minute and a half in, two minutes to go" */
 internal fun progressWords(track: NowPlaying, pos: Long): String {

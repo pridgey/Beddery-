@@ -163,13 +163,19 @@ private fun CassetteTop(ctx: SaverContext, notices: Notices) {
 @Composable
 private fun NewCounter(notices: Notices) {
     val label = noticeCountLabel(notices)
-    Box(
+    Row(
         Modifier
             .background(Color(0xFF06120F), RoundedCornerShape(6.dp))
             .border(1.dp, Color(0xFF2A2830), RoundedCornerShape(6.dp))
             .padding(horizontal = 10.dp, vertical = 7.dp)
             .clearAndSetSemantics { contentDescription = label },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        // The apps' icons lit in the display, like the indicator symbols printed on a deck's LCD.
+        Box(Modifier.drawBehind { drawRect(Brush.radialGradient(listOf(Lcd.copy(alpha = 0.18f), Color.Transparent), radius = size.maxDimension * 0.7f)) }) {
+            NoticeGlyphs(notices, Lcd, 14.dp, 5.dp)
+        }
         Text(
             "NEW %02d".format(notices.count.coerceAtMost(99)),
             style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 13.sp, color = Lcd, letterSpacing = 1.sp, shadow = Shadow(Lcd.copy(alpha = 0.67f), blurRadius = 12f)),
@@ -214,10 +220,13 @@ private fun MaskingTape(notices: Notices, item: NotificationItem, width: Dp) {
             }
             .padding(horizontal = 20.dp, vertical = 8.dp),
     ) {
-        Text(
-            "MEMO · " + item.appName.uppercase(), color = TapeInk.copy(alpha = 0.6f), fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold,
-            fontSize = 9.sp, letterSpacing = 2.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            NoticeGlyph(item, null, TapeInk.copy(alpha = 0.6f), 12.dp)
+            Text(
+                "MEMO · " + item.appName.uppercase(), color = TapeInk.copy(alpha = 0.6f), fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold,
+                fontSize = 9.sp, letterSpacing = 2.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+        }
         Text(
             listOfNotNull(head, body).joinToString(": ").lowercase(), color = TapeInk, fontFamily = PermanentMarker, fontSize = 17.sp, lineHeight = 21.sp,
             maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp),

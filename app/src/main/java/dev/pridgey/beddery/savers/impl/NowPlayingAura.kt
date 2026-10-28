@@ -218,25 +218,25 @@ private fun AuraClock(ctx: SaverContext, notices: Notices) {
     }
 }
 
-/** One small glowing dot per app with notifications waiting; the newest is a little bigger. */
+/** Each app with notifications waiting, as its icon glowing softly; the newest is a little bigger. */
 @Composable
 private fun WaitingDots(notices: Notices) {
     val label = noticeCountLabel(notices)
     Row(
         Modifier.padding(top = 12.dp).clearAndSetSemantics { contentDescription = label },
-        horizontalArrangement = Arrangement.spacedBy(9.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        notices.apps.take(DotColors.size).forEachIndexed { i, _ ->
+        notices.apps.take(DotColors.size).forEachIndexed { i, app ->
             val c = DotColors[i]
             Box(
                 Modifier
-                    .size(if (i == 0) 9.dp else 6.dp)
-                    .drawBehind {
-                        drawCircle(Brush.radialGradient(listOf(c.copy(alpha = 0.55f), Color.Transparent)), size.minDimension * 1.6f)
-                        drawCircle(c)
-                    },
-            )
+                    .size(if (i == 0) 18.dp else 15.dp)
+                    .drawBehind { drawCircle(Brush.radialGradient(listOf(c.copy(alpha = 0.4f), Color.Transparent)), size.minDimension * 1.1f) },
+                contentAlignment = Alignment.Center,
+            ) {
+                NoticeGlyph(null, app, c, if (i == 0) 16.dp else 13.dp)
+            }
         }
     }
 }
@@ -279,7 +279,10 @@ private fun AuraInfo(track: NowPlaying, pos: Long, notices: Notices) {
             } else {
                 val (head, body) = noticeLines(notices, item)
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(head.uppercase(), color = Color(0xFFFFCFA3), fontSize = 11.sp, fontWeight = FontWeight.Medium, letterSpacing = 2.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                        NoticeGlyph(item, null, Color(0xFFFFCFA3), 14.dp)
+                        Text(head.uppercase(), color = Color(0xFFFFCFA3), fontSize = 11.sp, fontWeight = FontWeight.Medium, letterSpacing = 2.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
                     if (body != null) {
                         Text(body, color = Color(0xFFF2E3D4), fontSize = 14.sp, fontWeight = FontWeight.Light, textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 3.dp))
                     }

@@ -199,7 +199,7 @@ private fun Tiles(track: NowPlaying, clock: State<Float>, size: Dp, notices: Not
     }
 }
 
-/** The top-right tile, turned over: the newest app's icon and how many are waiting. */
+/** The top-right tile, turned over: the waiting apps' icons and how many notifications there are. */
 @Composable
 private fun WaitingTile(notices: Notices, accent: Color, modifier: Modifier) {
     val label = noticeCountLabel(notices)
@@ -209,10 +209,19 @@ private fun WaitingTile(notices: Notices, accent: Color, modifier: Modifier) {
             .background(MTile, shape)
             .border(1.dp, accent.copy(alpha = 0.35f), shape)
             .clearAndSetSemantics { contentDescription = label },
-        verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
+        verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        NoticeGlyph(null, notices.apps.firstOrNull(), accent, 18.dp)
+        if (notices.apps.size <= 1) {
+            NoticeGlyph(null, notices.apps.firstOrNull(), accent, 18.dp)
+        } else {
+            // Up to four apps' icons in a little grid of their own, tiles within the tile.
+            notices.apps.take(4).chunked(2).forEach { pair ->
+                Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    pair.forEach { NoticeGlyph(null, it, accent, 14.dp) }
+                }
+            }
+        }
         Text("${notices.count}", color = MText, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, style = TabularNumbers)
     }
 }

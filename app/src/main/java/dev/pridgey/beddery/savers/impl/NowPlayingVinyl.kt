@@ -159,7 +159,7 @@ private fun VinylTop(ctx: SaverContext, rpm45: Boolean, notices: Notices, modifi
     }
 }
 
-/** A third switch on the deck: an amber lamp lit while notifications wait, with how many. */
+/** A third switch on the deck: an amber lamp lit while notifications wait, with the apps' icons and how many. */
 @Composable
 private fun NoticeLamp(notices: Notices) {
     val label = noticeCountLabel(notices)
@@ -181,6 +181,7 @@ private fun NoticeLamp(notices: Notices) {
                     drawCircle(Lamp)
                 },
         )
+        NoticeGlyphs(notices, VCream.copy(alpha = 0.75f), 14.dp, 5.dp)
         Text("${notices.count}", color = VCream, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, style = TabularNumbers)
     }
 }
@@ -219,7 +220,7 @@ private fun IndexCard(notices: Notices, item: NotificationItem, width: Dp) {
             .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 13.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            NoticeGlyph(item, null, CardMuted, 11.dp)
+            NoticeGlyph(item, null, CardMuted, 14.dp)
             Text(
                 item.appName.uppercase() + " · NOW", color = CardMuted, fontSize = 10.sp, fontWeight = FontWeight.SemiBold,
                 letterSpacing = 1.6.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
