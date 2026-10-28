@@ -80,7 +80,7 @@ private const val SAMPLE_CHAT = "sample.chat"
 private const val SAMPLE_MAIL = "sample.mail"
 private const val SAMPLE_CAL = "sample.calendar"
 
-private fun fallbackGlyph(pkg: String): ImageVector = when (pkg) {
+internal fun fallbackGlyph(pkg: String): ImageVector = when (pkg) {
     SAMPLE_CHAT -> Icons.Rounded.ChatBubble
     SAMPLE_MAIL -> Icons.Rounded.Mail
     SAMPLE_CAL -> Icons.Rounded.CalendarMonth
@@ -110,19 +110,7 @@ fun NotificationBar(mode: NotificationsMode, modifier: Modifier = Modifier, icon
     if (mode == NotificationsMode.OFF) return
     val items = rememberNotifications(sample)
     val apps = remember(items) { items.byApp() }
-    var seen by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    var banner by remember { mutableStateOf<NotificationItem?>(null) }
-    val newest = items.maxByOrNull { it.postedAt }
-    LaunchedEffect(newest?.key, newest?.postedAt) {
-        if (newest != null && newest.postedAt > seen) {
-            seen = newest.postedAt
-            banner = newest
-            delay(BANNER_MS)
-            banner = null
-        }
-    }
-    // Hide the banner if its notification was dismissed elsewhere.
-    val shown = banner?.takeIf { b -> items.any { it.key == b.key } }
+    val shown = rememberArrival(items)
 
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         AnimatedVisibility(
@@ -145,6 +133,24 @@ fun NotificationBar(mode: NotificationsMode, modifier: Modifier = Modifier, icon
 }
 
 private const val MAX_ICONS = 5
+
+/** The newest notification for a few seconds after it lands, then null. Older ones never pop up. */
+@Composable
+fun rememberArrival(items: List<NotificationItem>): NotificationItem? {
+    var seen by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    var banner by remember { mutableStateOf<NotificationItem?>(null) }
+    val newest = items.maxByOrNull { it.postedAt }
+    LaunchedEffect(newest?.key, newest?.postedAt) {
+        if (newest != null && newest.postedAt > seen) {
+            seen = newest.postedAt
+            banner = newest
+            delay(BANNER_MS)
+            banner = null
+        }
+    }
+    // Gone too if it was dismissed elsewhere.
+    return banner?.takeIf { b -> items.any { it.key == b.key } }
+}
 
 @Composable
 private fun CountedGlyph(app: AppNotifications, size: Dp) {

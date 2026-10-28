@@ -33,6 +33,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -57,6 +58,7 @@ internal fun OneLineStyle(ctx: SaverContext, track: NowPlaying, transport: Trans
     val clock = rememberClock(!ctx.preview)
     val dim by animateFloatAsState(if (track.playing) 1f else 0.5f, tween(1200), label = "dim")
     val (time, _) = clockParts(ctx)
+    val notices = rememberNotices(ctx)
 
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         Column(
@@ -91,10 +93,39 @@ internal fun OneLineStyle(ctx: SaverContext, track: NowPlaying, transport: Trans
                     drawCircle(accent, 2.5.dp.toPx(), Offset(size.width * p, y))
                 }
             }
+            // While notifications wait, the sentence mentions them.
+            val waiting = notices.waiting && notices.arrival == null
             Text(
-                progressWords(track, pos), color = LMuted, fontFamily = InstrumentSerif, fontStyle = FontStyle.Italic, fontSize = 15.sp,
+                buildAnnotatedString {
+                    append(progressWords(track, pos))
+                    if (waiting) {
+                        append(", and ")
+                        withStyle(SpanStyle(color = accent)) { append(sayCount(notices.count)) }
+                        append(if (notices.count == 1) " is waiting" else " are waiting")
+                    }
+                },
+                color = LMuted, fontFamily = InstrumentSerif, fontStyle = FontStyle.Italic, fontSize = 15.sp,
                 modifier = Modifier.padding(top = 12.dp),
             )
+            // A new one gets a sentence of its own.
+            ArrivalCard(notices) { item ->
+                val reveal = notices.reveals(item)
+                Text(
+                    buildAnnotatedString {
+                        append("Just now, ")
+                        if (reveal) {
+                            withStyle(SpanStyle(color = accent)) { append(item.title ?: item.appName) }
+                            item.text?.let { withStyle(SpanStyle(fontStyle = FontStyle.Italic)) { append(": \u201C$it\u201D") } }
+                        } else {
+                            append("something new in ")
+                            withStyle(SpanStyle(color = accent)) { append(item.appName) }
+                            append(".")
+                        }
+                    },
+                    color = LText, fontFamily = InstrumentSerif, fontSize = 24.sp, lineHeight = 1.2.em, maxLines = 3, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 18.dp),
+                )
+            }
         }
 
         Row(

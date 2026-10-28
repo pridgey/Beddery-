@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.pridgey.beddery.data.AppSettings
 import dev.pridgey.beddery.data.ClockFormat
+import dev.pridgey.beddery.data.NotificationsMode
 import dev.pridgey.beddery.system.BatteryStatus
 import dev.pridgey.beddery.system.batteryFlow
 import dev.pridgey.beddery.system.clockFlow
@@ -29,6 +30,8 @@ data class SaverContext(
     val preview: Boolean,
     /** Shown as a preview (thumbnail or full-screen): use sample data where real data is missing. */
     val demo: Boolean = preview,
+    /** How much of a notification this screen may show right now (set by the host, so night rules apply). */
+    val notifications: NotificationsMode = NotificationsMode.OFF,
 )
 
 @Composable

@@ -45,8 +45,8 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.ImageShader
@@ -62,6 +62,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -73,14 +75,15 @@ import androidx.compose.ui.unit.sp
 import dev.pridgey.beddery.R
 import dev.pridgey.beddery.media.Art
 import dev.pridgey.beddery.media.NowPlaying
+import dev.pridgey.beddery.notifications.NotificationItem
 import dev.pridgey.beddery.savers.SaverContext
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.math.sqrt
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private val Paper = Color(0xFFF2E8D5)
 private val Blue = Color(0xFF2343B0)
@@ -92,6 +95,7 @@ private val Stub = Color(0xFFF9DCE2)
 internal fun PosterStyle(ctx: SaverContext, track: NowPlaying, transport: Transport) {
     val pos = rememberPositionMs(track)
     val p = track.fraction(pos)
+    val notices = rememberNotices(ctx)
     BoxWithConstraints(
         Modifier.fillMaxSize().drawBehind {
             drawRect(Paper)
@@ -102,7 +106,7 @@ internal fun PosterStyle(ctx: SaverContext, track: NowPlaying, transport: Transp
         if (maxWidth > maxHeight) {
             val art = maxHeight - 48.dp
             Row(Modifier.fillMaxSize().padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
-                PrintedArt(track.art, art, overlap = 0.dp)
+                PrintedArt(track.art, art, overlap = 0.dp, notices = notices)
                 Spacer(Modifier.width(28.dp))
                 Column(Modifier.weight(1f)) {
                     PosterHeader(track)
@@ -110,7 +114,7 @@ internal fun PosterStyle(ctx: SaverContext, track: NowPlaying, transport: Transp
                     PosterTitle(track, width - art - 76.dp, 80f)
                     PosterDetails(ctx, track, pos, p)
                     Spacer(Modifier.weight(1f))
-                    PosterStub(track, transport)
+                    PosterStub(track, transport, notices)
                 }
             }
         } else {
@@ -118,11 +122,11 @@ internal fun PosterStyle(ctx: SaverContext, track: NowPlaying, transport: Transp
             Column(Modifier.fillMaxSize().padding(start = 22.dp, end = 22.dp, top = 26.dp, bottom = 22.dp)) {
                 PosterHeader(track)
                 Spacer(Modifier.height(14.dp))
-                PrintedArt(track.art, art, overlap = 40.dp, modifier = Modifier.align(Alignment.CenterHorizontally))
+                PrintedArt(track.art, art, overlap = 40.dp, notices = notices, modifier = Modifier.align(Alignment.CenterHorizontally))
                 PosterTitle(track, width - 44.dp, 104f)
                 PosterDetails(ctx, track, pos, p)
                 Spacer(Modifier.weight(1f))
-                PosterStub(track, transport)
+                PosterStub(track, transport, notices)
             }
         }
     }
@@ -141,7 +145,7 @@ private fun PosterHeader(track: NowPlaying) {
 
 /** The halftone, made off the main thread whenever the cover changes. [overlap] lets the title print over its foot. */
 @Composable
-private fun PrintedArt(art: Art?, size: Dp, overlap: Dp, modifier: Modifier = Modifier) {
+private fun PrintedArt(art: Art?, size: Dp, overlap: Dp, notices: Notices, modifier: Modifier = Modifier) {
     val px = with(LocalDensity.current) { size.roundToPx() }
     var printed by remember { mutableStateOf<Pair<String, ImageBitmap>?>(null) }
     LaunchedEffect(art?.key, px) {
@@ -160,6 +164,58 @@ private fun PrintedArt(art: Art?, size: Dp, overlap: Dp, modifier: Modifier = Mo
     ) {
         printed?.second?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds) }
         Sticker(Modifier.align(Alignment.TopEnd).offset(x = 10.dp, y = 14.dp).size(size * 0.25f).rotate(12f), size)
+        ArrivalCard(notices, Modifier.align(Alignment.BottomStart).offset(x = 18.dp, y = (-26).dp)) { item ->
+            Flyer(notices, item, (size * 0.62f).coerceAtMost(240.dp))
+        }
+    }
+}
+
+/** A small flyer stapled over the print: blue ink, Anton heading. */
+@Composable
+private fun Flyer(notices: Notices, item: NotificationItem, width: Dp) {
+    val (head, body) = noticeLines(notices, item)
+    Box(Modifier.rotate(4f)) {
+        Column(
+            Modifier
+                .width(width)
+                .drawBehind { drawRect(Blue.copy(alpha = 0.25f), Offset(3.dp.toPx(), 5.dp.toPx()), size) }
+                .background(Blue)
+                .padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = 14.dp),
+        ) {
+            Text(item.appName.uppercase() + " · NOW", color = Color(0xFFFF8DB3), fontFamily = Anton, fontSize = 13.sp, letterSpacing = 2.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(head.uppercase(), color = Paper, fontFamily = Anton, fontSize = 30.sp, lineHeight = 1.05.em, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))
+            if (body != null) {
+                Text(body, color = Paper, fontSize = 14.sp, fontWeight = FontWeight.Medium, lineHeight = 19.sp, maxLines = 3, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
+            }
+        }
+        // The staple.
+        Box(
+            Modifier
+                .align(Alignment.TopCenter)
+                .offset(y = 6.dp)
+                .size(26.dp, 4.dp)
+                .drawBehind {
+                    drawRect(Color(0x4D000000), Offset(0f, 1.dp.toPx()), size)
+                    drawRect(Color(0xFFC9C3B8))
+                },
+        )
+    }
+}
+
+/** A rubber stamp on the stub: how many notifications are waiting. */
+@Composable
+private fun WaitingStamp(notices: Notices, modifier: Modifier) {
+    val label = noticeCountLabel(notices)
+    Column(
+        modifier
+            .rotate(-8f)
+            .border(2.dp, Pink, RoundedCornerShape(4.dp))
+            .padding(horizontal = 9.dp, vertical = 4.dp)
+            .clearAndSetSemantics { contentDescription = label },
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text("${notices.count} NEW", color = Pink, fontFamily = Anton, fontSize = 18.sp, lineHeight = 1.em)
+        Text("UNREAD", color = Pink, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.5.sp)
     }
 }
 
@@ -238,7 +294,7 @@ private fun Detail(label: String, value: String, modifier: Modifier, align: Text
 
 /** The tear-off stub, holding the buttons. */
 @Composable
-private fun PosterStub(track: NowPlaying, transport: Transport) {
+private fun PosterStub(track: NowPlaying, transport: Transport, notices: Notices) {
     Box(
         Modifier
             .fillMaxWidth()
@@ -264,6 +320,15 @@ private fun PosterStub(track: NowPlaying, transport: Transport) {
             }
             NpButton(stringResource(R.string.nowplaying_next), transport::next, Modifier.weight(1f).height(62.dp).border(2.5.dp, Blue, RectangleShape), RectangleShape, Blue, track.canNext) {
                 Icon(Icons.Rounded.SkipNext, null, tint = Blue, modifier = Modifier.size(28.dp))
+            }
+            if (notices.waiting) {
+                // Past a perforation, like the part of the ticket the door keeps.
+                Canvas(Modifier.padding(start = 4.dp).width(2.dp).height(62.dp)) {
+                    drawLine(Blue.copy(alpha = 0.35f), Offset(size.width / 2, 0f), Offset(size.width / 2, size.height), size.width, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx())))
+                }
+                Box(Modifier.width(88.dp).height(62.dp), contentAlignment = Alignment.Center) {
+                    WaitingStamp(notices, Modifier)
+                }
             }
         }
     }

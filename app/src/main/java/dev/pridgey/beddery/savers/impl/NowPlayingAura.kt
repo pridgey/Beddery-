@@ -1,10 +1,15 @@
 package dev.pridgey.beddery.savers.impl
 
 import android.graphics.Bitmap
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -14,6 +19,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -29,31 +35,34 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
-import androidx.compose.ui.graphics.Paint
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.ImageShader
-import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -65,6 +74,7 @@ import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import dev.pridgey.beddery.R
 import dev.pridgey.beddery.media.NowPlaying
+import dev.pridgey.beddery.notifications.NotificationItem
 import dev.pridgey.beddery.savers.SaverContext
 import dev.pridgey.beddery.savers.formatLongDate
 import kotlin.math.PI
@@ -74,6 +84,9 @@ import kotlin.math.roundToInt
 
 private val AGround = Color(0xFF040507)
 private val ASoft = Color(0xFFC3D3D6)
+private val Warm = Color(0xFFFFA870)
+private val WarmInk = Color(0xFFFFE2C4)
+private val DotColors = listOf(Color(0xFFFFD2A6), Color(0xFFB4D8DC), Color(0xFFC8C0F0), Color(0xFFE8C4D8))
 private val Saturate = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(1.5f) })
 
 /** The cover floats in a glow made of its own colours, which breathes while the music plays. */
@@ -89,6 +102,7 @@ internal fun AuraStyle(ctx: SaverContext, track: NowPlaying, transport: Transpor
     val glowImage = remember(track.art?.key) { track.art?.backdrop?.let(::softEdged) }
     var artCenter by remember { mutableStateOf(Offset.Unspecified) }
     var origin by remember { mutableStateOf(Offset.Zero) }
+    val notices = rememberNotices(ctx)
 
     BoxWithConstraints(Modifier.fillMaxSize().background(AGround)) {
         val land = maxWidth > maxHeight
@@ -131,26 +145,31 @@ internal fun AuraStyle(ctx: SaverContext, track: NowPlaying, transport: Transpor
         }
 
         val art: @Composable () -> Unit = {
-            FeatheredArt(track, accent, artSize, artScale, Modifier.onGloballyPositioned { artCenter = it.boundsInRoot().center })
+            Box(Modifier.size(artSize)) {
+                FeatheredArt(track, accent, artSize, artScale, Modifier.onGloballyPositioned { artCenter = it.boundsInRoot().center })
+                ArrivalCard(notices, Modifier.align(Alignment.BottomEnd).offset(x = artSize * 0.16f, y = artSize * 0.12f)) { item ->
+                    SecondGlow(item, artSize * 0.5f)
+                }
+            }
         }
         if (land) {
             Row(Modifier.fillMaxSize().padding(horizontal = 32.dp, vertical = 24.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) { art() }
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                    AuraClock(ctx)
+                    AuraClock(ctx, notices)
                     Spacer(Modifier.height(30.dp))
-                    AuraInfo(track, pos)
+                    AuraInfo(track, pos, notices)
                     Spacer(Modifier.height(26.dp))
                     AuraControls(track, transport, accent, p)
                 }
             }
         } else {
             Column(Modifier.fillMaxSize().padding(top = 54.dp, bottom = 56.dp, start = 32.dp, end = 32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                AuraClock(ctx)
+                AuraClock(ctx, notices)
                 Spacer(Modifier.weight(0.8f))
                 art()
                 Spacer(Modifier.weight(0.55f))
-                AuraInfo(track, pos)
+                AuraInfo(track, pos, notices)
                 Spacer(Modifier.weight(1f))
                 AuraControls(track, transport, accent, p)
             }
@@ -188,16 +207,63 @@ private fun FeatheredArt(track: NowPlaying, accent: Color, size: Dp, scale: Floa
 }
 
 @Composable
-private fun AuraClock(ctx: SaverContext) {
+private fun AuraClock(ctx: SaverContext, notices: Notices) {
     val (time, _) = clockParts(ctx)
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(time, color = ASoft, fontSize = 20.sp, fontWeight = FontWeight.ExtraLight, letterSpacing = 9.sp, modifier = Modifier.padding(start = 9.dp))
         Text(formatLongDate(ctx.now.toLocalDate()).uppercase(), color = Color(0xFF7F959A), fontSize = 11.sp, fontWeight = FontWeight.Medium, letterSpacing = 3.sp, modifier = Modifier.padding(top = 6.dp))
+        AnimatedVisibility(notices.waiting, enter = fadeIn(tween(900)), exit = fadeOut(tween(900))) {
+            WaitingDots(notices)
+        }
+    }
+}
+
+/** One small glowing dot per app with notifications waiting; the newest is a little bigger. */
+@Composable
+private fun WaitingDots(notices: Notices) {
+    val label = noticeCountLabel(notices)
+    Row(
+        Modifier.padding(top = 12.dp).clearAndSetSemantics { contentDescription = label },
+        horizontalArrangement = Arrangement.spacedBy(9.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        notices.apps.take(DotColors.size).forEachIndexed { i, _ ->
+            val c = DotColors[i]
+            Box(
+                Modifier
+                    .size(if (i == 0) 9.dp else 6.dp)
+                    .drawBehind {
+                        drawCircle(Brush.radialGradient(listOf(c.copy(alpha = 0.55f), Color.Transparent)), size.minDimension * 1.6f)
+                        drawCircle(c)
+                    },
+            )
+        }
+    }
+}
+
+/** A smaller, warmer glow that drifts in beside the cover, holding the app's icon. */
+@Composable
+private fun SecondGlow(item: NotificationItem, size: Dp) {
+    Box(
+        Modifier
+            .size(size)
+            .drawBehind { drawCircle(Brush.radialGradient(0f to Warm.copy(alpha = 0.55f), 0.4f to Warm.copy(alpha = 0.22f), 1f to Color.Transparent)) },
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            Modifier
+                .size(42.dp)
+                .background(WarmInk.copy(alpha = 0.16f), CircleShape)
+                .border(1.dp, WarmInk.copy(alpha = 0.25f), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            NoticeGlyph(item, null, WarmInk, 20.dp)
+        }
     }
 }
 
 @Composable
-private fun AuraInfo(track: NowPlaying, pos: Long) {
+private fun AuraInfo(track: NowPlaying, pos: Long, notices: Notices) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(track.title, color = Color(0xFFEAF3F4), fontSize = 24.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis)
         track.artist?.let { Text(it, color = Color(0xFFB4C6C9), fontSize = 15.sp, fontWeight = FontWeight.Light, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp)) }
@@ -206,7 +272,20 @@ private fun AuraInfo(track: NowPlaying, pos: Long) {
             track.durationMs > 0 -> formatTrackTime(pos) + "  ·  " + formatTrackTime(track.durationMs)
             else -> formatTrackTime(pos)
         }
-        Text(line, color = Color(0xFF8BA0A4), fontSize = 12.sp, fontWeight = FontWeight.Medium, letterSpacing = 1.5.sp, modifier = Modifier.padding(top = 14.dp))
+        // A new notification takes the time line's place for a few seconds.
+        Crossfade(notices.arrival, Modifier.padding(top = 14.dp), animationSpec = tween(700), label = "notice") { item ->
+            if (item == null) {
+                Text(line, color = Color(0xFF8BA0A4), fontSize = 12.sp, fontWeight = FontWeight.Medium, letterSpacing = 1.5.sp)
+            } else {
+                val (head, body) = noticeLines(notices, item)
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(head.uppercase(), color = Color(0xFFFFCFA3), fontSize = 11.sp, fontWeight = FontWeight.Medium, letterSpacing = 2.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (body != null) {
+                        Text(body, color = Color(0xFFF2E3D4), fontSize = 14.sp, fontWeight = FontWeight.Light, textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 3.dp))
+                    }
+                }
+            }
+        }
     }
 }
 

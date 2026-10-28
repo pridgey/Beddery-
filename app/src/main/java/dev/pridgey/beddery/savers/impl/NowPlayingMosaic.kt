@@ -2,19 +2,25 @@ package dev.pridgey.beddery.savers.impl
 
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -30,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.RoundRect
@@ -40,7 +47,10 @@ import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -55,6 +65,7 @@ import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import dev.pridgey.beddery.R
 import dev.pridgey.beddery.media.NowPlaying
+import dev.pridgey.beddery.notifications.NotificationItem
 import dev.pridgey.beddery.savers.SaverContext
 import dev.pridgey.beddery.savers.TabularNumbers
 import dev.pridgey.beddery.savers.formatLongDate
@@ -78,6 +89,7 @@ internal fun MosaicStyle(ctx: SaverContext, track: NowPlaying, transport: Transp
     val pos = rememberPositionMs(track)
     val p = track.fraction(pos)
     val clock = rememberClock(track.playing && !ctx.preview)
+    val notices = rememberNotices(ctx)
 
     BoxWithConstraints(
         Modifier.fillMaxSize().drawBehind {
@@ -88,11 +100,12 @@ internal fun MosaicStyle(ctx: SaverContext, track: NowPlaying, transport: Transp
         if (maxWidth > maxHeight) {
             val grid = maxHeight - 56.dp
             Row(Modifier.fillMaxSize().padding(horizontal = 36.dp, vertical = 28.dp), verticalAlignment = Alignment.CenterVertically) {
-                Tiles(track, clock, grid)
+                Tiles(track, clock, grid, notices, accent)
                 Spacer(Modifier.width(36.dp))
                 Column(Modifier.weight(1f)) {
                     MosaicHeader(ctx, track)
                     Spacer(Modifier.weight(1f))
+                    MosaicNoticeLine(notices, accent)
                     MosaicInfo(track, pos)
                     Spacer(Modifier.height(18.dp))
                     MosaicButtons(track, transport, accent, Modifier.fillMaxWidth(), (grid - 15.dp) / 4)
@@ -103,9 +116,12 @@ internal fun MosaicStyle(ctx: SaverContext, track: NowPlaying, transport: Transp
             Column(Modifier.fillMaxSize().padding(start = 24.dp, end = 24.dp, top = 40.dp, bottom = 36.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 MosaicHeader(ctx, track)
                 Spacer(Modifier.weight(0.6f))
-                Tiles(track, clock, grid)
+                Tiles(track, clock, grid, notices, accent)
                 Spacer(Modifier.weight(0.5f))
-                Column(Modifier.width(grid)) { MosaicInfo(track, pos) }
+                Column(Modifier.width(grid)) {
+                    MosaicNoticeLine(notices, accent)
+                    MosaicInfo(track, pos)
+                }
                 Spacer(Modifier.weight(1f))
                 MosaicButtons(track, transport, accent, Modifier.width(grid), (grid - 15.dp) / 4)
             }
@@ -128,38 +144,111 @@ private fun MosaicHeader(ctx: SaverContext, track: NowPlaying) {
 }
 
 @Composable
-private fun Tiles(track: NowPlaying, clock: State<Float>, size: Dp) {
+private fun Tiles(track: NowPlaying, clock: State<Float>, size: Dp, notices: Notices, accent: Color) {
     val image = track.art?.image
-    Canvas(Modifier.size(size)) {
-        val s = this.size.width
-        val gap = 5.dp.toPx()
-        val cell = (s - gap * 3) / 4
-        val radius = CornerRadius(6.dp.toPx())
-        val t = clock.value
-        for (k in 0 until 16) {
-            val x = (k % 4) * (cell + gap)
-            val y = (k / 4) * (cell + gap)
-            // Each tile drifts and breathes on its own slow loop.
-            val period = 6f + (k * 7) % 5
-            val ph = t * 2f * PI.toFloat() / period + k
-            val o = Offset(x + sin(ph) * 1.8.dp.toPx(), y + cos(ph * 0.8f) * 2.dp.toPx())
-            val alpha = (TileShade[k] + 0.08f * sin(t * 2f * PI.toFloat() / (17f + k % 5) + k * 1.7f)).coerceIn(0.4f, 1f)
-            clipPath(Path().apply { addRoundRect(RoundRect(o.x, o.y, o.x + cell, o.y + cell, radius)) }) {
-                if (image != null) {
-                    val sx = image.width / s
-                    val sy = image.height / s
-                    drawImage(
-                        image,
-                        srcOffset = IntOffset((x * sx).roundToInt(), (y * sy).roundToInt()),
-                        srcSize = IntSize((cell * sx).roundToInt().coerceAtLeast(1), (cell * sy).roundToInt().coerceAtLeast(1)),
-                        dstOffset = IntOffset(o.x.roundToInt(), o.y.roundToInt()),
-                        dstSize = IntSize(cell.roundToInt(), cell.roundToInt()),
-                        alpha = alpha, filterQuality = FilterQuality.Medium,
-                    )
-                } else {
-                    drawRect(MTile, o, Size(cell, cell), alpha = alpha)
+    // Tiles turn over for notifications: the bottom-right pair for a new one, the top-right one while some wait.
+    val arriving by animateFloatAsState(if (notices.arrival != null) 1f else 0f, tween(600), label = "arriving")
+    val waiting by animateFloatAsState(if (notices.waiting && notices.arrival == null) 1f else 0f, tween(900), label = "waiting")
+    val gapDp = 5.dp
+    val cellDp = (size - gapDp * 3) / 4
+    Box(Modifier.size(size)) {
+        Canvas(Modifier.fillMaxSize()) {
+            val s = this.size.width
+            val gap = 5.dp.toPx()
+            val cell = (s - gap * 3) / 4
+            val radius = CornerRadius(6.dp.toPx())
+            val t = clock.value
+            for (k in 0 until 16) {
+                val x = (k % 4) * (cell + gap)
+                val y = (k / 4) * (cell + gap)
+                // Each tile drifts and breathes on its own slow loop.
+                val period = 6f + (k * 7) % 5
+                val ph = t * 2f * PI.toFloat() / period + k
+                val o = Offset(x + sin(ph) * 1.8.dp.toPx(), y + cos(ph * 0.8f) * 2.dp.toPx())
+                val turned = when (k) {
+                    14, 15 -> arriving
+                    3 -> waiting
+                    else -> 0f
+                }
+                if (turned >= 1f) continue
+                val alpha = (TileShade[k] + 0.08f * sin(t * 2f * PI.toFloat() / (17f + k % 5) + k * 1.7f)).coerceIn(0.4f, 1f) * (1f - turned)
+                clipPath(Path().apply { addRoundRect(RoundRect(o.x, o.y, o.x + cell, o.y + cell, radius)) }) {
+                    if (image != null) {
+                        val sx = image.width / s
+                        val sy = image.height / s
+                        drawImage(
+                            image,
+                            srcOffset = IntOffset((x * sx).roundToInt(), (y * sy).roundToInt()),
+                            srcSize = IntSize((cell * sx).roundToInt().coerceAtLeast(1), (cell * sy).roundToInt().coerceAtLeast(1)),
+                            dstOffset = IntOffset(o.x.roundToInt(), o.y.roundToInt()),
+                            dstSize = IntSize(cell.roundToInt(), cell.roundToInt()),
+                            alpha = alpha, filterQuality = FilterQuality.Medium,
+                        )
+                    } else {
+                        drawRect(MTile, o, Size(cell, cell), alpha = alpha)
+                    }
                 }
             }
+        }
+        if (waiting > 0f) {
+            WaitingTile(notices, accent, Modifier.offset(x = (cellDp + gapDp) * 3).size(cellDp).graphicsLayer { alpha = waiting })
+        }
+        ArrivalCard(notices, Modifier.offset(x = (cellDp + gapDp) * 2, y = (cellDp + gapDp) * 3)) { item ->
+            TurnedTiles(notices, item, accent, track.art?.shade ?: Color(0xFF120E1F), Modifier.size(cellDp * 2 + gapDp, cellDp))
+        }
+    }
+}
+
+/** The top-right tile, turned over: the newest app's icon and how many are waiting. */
+@Composable
+private fun WaitingTile(notices: Notices, accent: Color, modifier: Modifier) {
+    val label = noticeCountLabel(notices)
+    val shape = RoundedCornerShape(6.dp)
+    Column(
+        modifier
+            .background(MTile, shape)
+            .border(1.dp, accent.copy(alpha = 0.35f), shape)
+            .clearAndSetSemantics { contentDescription = label },
+        verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        NoticeGlyph(null, notices.apps.firstOrNull(), accent, 18.dp)
+        Text("${notices.count}", color = MText, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, style = TabularNumbers)
+    }
+}
+
+/** Two tiles turned over into one card in the cover's accent colour, naming who it's from. */
+@Composable
+private fun TurnedTiles(notices: Notices, item: NotificationItem, accent: Color, ink: Color, modifier: Modifier) {
+    val reveal = notices.reveals(item)
+    // Without previews the tile names only the app.
+    val head = if (reveal) item.title ?: item.appName else item.appName
+    val sub = if (reveal) item.appName + " · now" else stringResource(R.string.notification_new)
+    val shape = RoundedCornerShape(6.dp)
+    Row(
+        modifier
+            .shadow(12.dp, shape, ambientColor = Color.Black, spotColor = Color.Black)
+            .background(accent, shape)
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        NoticeGlyph(item, null, ink, 22.dp)
+        Column {
+            Text(head, color = ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(sub, color = ink.copy(alpha = 0.7f), fontSize = 11.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+/** The message itself, lined up with the text column, only when previews are allowed. */
+@Composable
+private fun MosaicNoticeLine(notices: Notices, accent: Color) {
+    val shown = notices.copy(arrival = notices.arrival?.takeIf { notices.reveals(it) && it.text != null })
+    ArrivalCard(shown) { item ->
+        Row(Modifier.padding(bottom = 14.dp).height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Box(Modifier.width(3.dp).fillMaxHeight().background(accent, RoundedCornerShape(2.dp)))
+            Text(item.text.orEmpty(), color = MText, fontSize = 15.sp, fontWeight = FontWeight.Light, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
     }
 }

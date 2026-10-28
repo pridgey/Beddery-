@@ -92,7 +92,7 @@ fun SaverHost(
             Box(Modifier.fillMaxSize()) {
                 // Animated savers move on their own; static clocks drift slightly to protect the screen.
                 Box(Modifier.fillMaxSize().then(if (s.showsTime) shift else Modifier)) {
-                    s.content(context)
+                    s.content(context.copy(notifications = notificationMode))
                 }
                 if (!s.showsTime && settings.showClockOverlay) {
                     ClockOverlay(

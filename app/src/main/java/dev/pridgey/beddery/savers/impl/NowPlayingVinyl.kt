@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -34,6 +35,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -48,6 +51,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -61,6 +66,7 @@ import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import dev.pridgey.beddery.R
 import dev.pridgey.beddery.media.NowPlaying
+import dev.pridgey.beddery.notifications.NotificationItem
 import dev.pridgey.beddery.savers.SaverContext
 import dev.pridgey.beddery.savers.TabularNumbers
 import kotlin.math.cos
@@ -70,6 +76,9 @@ import kotlin.math.sin
 private val VCream = Color(0xFFF3E9DC)
 private val VMuted = Color(0xFFA8978A)
 private val VLine = Color(0xFF3A2E26)
+private val Lamp = Color(0xFFFF9A4A)
+private val CardInk = Color(0xFF3A2E26)
+private val CardMuted = Color(0xFF8A6F5C)
 
 /** A turntable: the cover is the record's label, and the tonearm creeps inward as the song plays. */
 @Composable
@@ -82,6 +91,7 @@ internal fun VinylStyle(ctx: SaverContext, track: NowPlaying, transport: Transpo
     val p = track.fraction(pos)
     // Playing, the needle rides from the edge to the label; stopped, the arm returns to its rest.
     val arm by animateFloatAsState(if (track.playing) 5f + p * 20f else -6f, tween(1400, easing = FastOutSlowInEasing), label = "arm")
+    val notices = rememberNotices(ctx)
 
     BoxWithConstraints(
         Modifier.fillMaxSize().drawBehind {
@@ -97,10 +107,10 @@ internal fun VinylStyle(ctx: SaverContext, track: NowPlaying, transport: Transpo
         if (maxWidth > maxHeight) {
             val deck = min(maxHeight - 56.dp, maxWidth * 0.48f)
             Row(Modifier.fillMaxSize().padding(horizontal = 40.dp, vertical = 28.dp), verticalAlignment = Alignment.CenterVertically) {
-                Turntable(track, spin, arm, accent, deck)
+                Deck(track, spin, arm, accent, deck, notices)
                 Spacer(Modifier.width(48.dp))
                 Column(Modifier.weight(1f)) {
-                    VinylTop(ctx, rpm45) { rpm45 = it }
+                    VinylTop(ctx, rpm45, notices) { rpm45 = it }
                     Spacer(Modifier.height(24.dp))
                     VinylInfo(track, accent, 30.sp)
                     Spacer(Modifier.height(18.dp))
@@ -112,9 +122,9 @@ internal fun VinylStyle(ctx: SaverContext, track: NowPlaying, transport: Transpo
         } else {
             val deck = min(maxWidth - 20.dp, maxHeight * 0.46f)
             Column(Modifier.fillMaxSize().padding(vertical = 36.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                VinylTop(ctx, rpm45, Modifier.padding(horizontal = 26.dp)) { rpm45 = it }
+                VinylTop(ctx, rpm45, notices, Modifier.padding(horizontal = 26.dp)) { rpm45 = it }
                 Spacer(Modifier.weight(0.6f))
-                Turntable(track, spin, arm, accent, deck)
+                Deck(track, spin, arm, accent, deck, notices)
                 Spacer(Modifier.weight(0.6f))
                 Column(Modifier.fillMaxWidth().padding(horizontal = 28.dp)) {
                     VinylInfo(track, accent, 34.sp)
@@ -129,7 +139,7 @@ internal fun VinylStyle(ctx: SaverContext, track: NowPlaying, transport: Transpo
 }
 
 @Composable
-private fun VinylTop(ctx: SaverContext, rpm45: Boolean, modifier: Modifier = Modifier, onSpeed: (Boolean) -> Unit) {
+private fun VinylTop(ctx: SaverContext, rpm45: Boolean, notices: Notices, modifier: Modifier = Modifier, onSpeed: (Boolean) -> Unit) {
     val (time, ampm) = clockParts(ctx)
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Row(verticalAlignment = Alignment.Bottom) {
@@ -144,6 +154,80 @@ private fun VinylTop(ctx: SaverContext, rpm45: Boolean, modifier: Modifier = Mod
         ) {
             SpeedChip("33⅓", "33 rpm", !rpm45) { onSpeed(false) }
             SpeedChip("45", "45 rpm", rpm45) { onSpeed(true) }
+            if (notices.waiting) NoticeLamp(notices)
+        }
+    }
+}
+
+/** A third switch on the deck: an amber lamp lit while notifications wait, with how many. */
+@Composable
+private fun NoticeLamp(notices: Notices) {
+    val label = noticeCountLabel(notices)
+    Row(
+        Modifier
+            .height(32.dp)
+            .padding(start = 3.dp)
+            .border(1.dp, VLine, CircleShape)
+            .padding(start = 10.dp, end = 12.dp)
+            .clearAndSetSemantics { contentDescription = label },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Box(
+            Modifier
+                .size(7.dp)
+                .drawBehind {
+                    drawCircle(Brush.radialGradient(listOf(Lamp.copy(alpha = 0.6f), Color.Transparent)), size.minDimension * 1.8f)
+                    drawCircle(Lamp)
+                },
+        )
+        Text("${notices.count}", color = VCream, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, style = TabularNumbers)
+    }
+}
+
+/** The record, with a notification's index card tucked against its edge when one arrives. */
+@Composable
+private fun Deck(track: NowPlaying, spin: State<Float>, arm: Float, accent: Color, size: Dp, notices: Notices) {
+    Box(Modifier.size(size)) {
+        Turntable(track, spin, arm, accent, size)
+        ArrivalCard(notices, Modifier.align(Alignment.BottomEnd).offset(x = 8.dp, y = 4.dp)) { item ->
+            IndexCard(notices, item, (size * 0.64f).coerceAtMost(260.dp))
+        }
+    }
+}
+
+/** A lined index card: red rule at the top, the app in small capitals, the message in Fraunces. */
+@Composable
+private fun IndexCard(notices: Notices, item: NotificationItem, width: Dp) {
+    val (head, body) = noticeLines(notices, item)
+    val shape = RoundedCornerShape(3.dp)
+    Column(
+        Modifier
+            .width(width)
+            .rotate(-3.5f)
+            .shadow(14.dp, shape, ambientColor = Color.Black, spotColor = Color.Black)
+            .background(VCream, shape)
+            .drawBehind {
+                val rule = 22.dp.toPx()
+                var y = 44.dp.toPx()
+                while (y < size.height - 6.dp.toPx()) {
+                    drawLine(CardInk.copy(alpha = 0.12f), Offset(0f, y), Offset(size.width, y), 1.dp.toPx())
+                    y += rule
+                }
+                drawRect(Color(0x73D65F3A), Offset(0f, 4.dp.toPx()), Size(size.width, 2.dp.toPx()))
+            }
+            .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 13.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            NoticeGlyph(item, null, CardMuted, 11.dp)
+            Text(
+                item.appName.uppercase() + " · NOW", color = CardMuted, fontSize = 10.sp, fontWeight = FontWeight.SemiBold,
+                letterSpacing = 1.6.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Text(head, color = CardInk, fontFamily = Fraunces, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
+        if (body != null) {
+            Text(body, color = CardInk, fontFamily = Fraunces, fontStyle = FontStyle.Italic, fontSize = 16.sp, lineHeight = 22.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
         }
     }
 }

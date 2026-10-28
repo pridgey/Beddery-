@@ -1,5 +1,9 @@
 package dev.pridgey.beddery.savers.impl
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -11,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -43,12 +48,14 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.ShaderBrush
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -58,11 +65,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import dev.pridgey.beddery.R
 import dev.pridgey.beddery.media.Art
 import dev.pridgey.beddery.media.NowPlaying
+import dev.pridgey.beddery.notifications.NotificationItem
 import dev.pridgey.beddery.savers.SaverContext
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -71,6 +80,8 @@ import kotlin.math.roundToInt
 private val PInk = Color(0xFFE6DED0)
 private val PMuted = Color(0xFFA9A1B4)
 private val PPen = Color(0xFF26213A)
+private val NoteTop = Color(0xFFF6E3A1)
+private val NoteBottom = Color(0xFFEDD486)
 private val Dimmed = grayscale(0.15f, 0.62f)
 private val ShortDay: DateTimeFormatter by lazy { DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault()) }
 
@@ -89,6 +100,7 @@ internal fun PolaroidStyle(ctx: SaverContext, track: NowPlaying, transport: Tran
     }
     val pos = rememberPositionMs(track)
     val p = track.fraction(pos)
+    val notices = rememberNotices(ctx)
 
     BoxWithConstraints(
         Modifier.fillMaxSize().drawBehind {
@@ -100,7 +112,7 @@ internal fun PolaroidStyle(ctx: SaverContext, track: NowPlaying, transport: Tran
         if (maxWidth > maxHeight) {
             val front = min(maxHeight * 0.66f, maxWidth * 0.36f)
             Row(Modifier.fillMaxSize().padding(horizontal = 36.dp, vertical = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-                Photos(track, behind, front)
+                Photos(track, behind, front, notices)
                 Spacer(Modifier.width(40.dp))
                 Column(Modifier.weight(1f)) {
                     PolaroidTop(ctx)
@@ -117,7 +129,7 @@ internal fun PolaroidStyle(ctx: SaverContext, track: NowPlaying, transport: Tran
             Column(Modifier.fillMaxSize().padding(horizontal = 28.dp, vertical = 30.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 PolaroidTop(ctx)
                 Spacer(Modifier.weight(0.6f))
-                Photos(track, behind, front)
+                Photos(track, behind, front, notices)
                 Spacer(Modifier.weight(0.5f))
                 PolaroidCaption(track, TextAlign.Center)
                 Spacer(Modifier.height(16.dp))
@@ -140,13 +152,62 @@ private fun PolaroidTop(ctx: SaverContext) {
 
 /** The current photo, with the previous one peeking out behind it. */
 @Composable
-private fun Photos(track: NowPlaying, behind: Art?, front: Dp) {
+private fun Photos(track: NowPlaying, behind: Art?, front: Dp, notices: Notices) {
     val k = front.value / 294f
     Box(Modifier.size(width = (330 * k).dp, height = (410 * k).dp)) {
         if (behind != null) {
             Photo(behind, null, (268 * k).dp, Modifier.offset((30 * k).dp, (14 * k).dp).rotate(8f), filter = Dimmed, k = k * 268f / 294f, tape = false)
         }
         Photo(track.art, track.title, front, Modifier.offset(0.dp, (8 * k).dp).rotate(-3.5f), filter = FilmFilter, k = k, tape = true)
+        AnimatedVisibility(
+            notices.waiting && notices.arrival == null, Modifier.align(Alignment.BottomEnd).offset((14 * k).dp, (-6 * k).dp),
+            enter = fadeIn(tween(900)), exit = fadeOut(tween(500)),
+        ) {
+            NotePile(notices, k)
+        }
+        ArrivalCard(notices, Modifier.align(Alignment.BottomEnd).offset((22 * k).dp, (-18 * k).dp)) { item ->
+            StickyNote(notices, item, k)
+        }
+    }
+}
+
+/** A sticky note on the desk with the message written out by hand. */
+@Composable
+private fun StickyNote(notices: Notices, item: NotificationItem, k: Float) {
+    val (head, body) = noticeLines(notices, item)
+    Box(Modifier.rotate(5f)) {
+        Column(
+            Modifier
+                .padding(top = (10 * k).dp)
+                .width((176 * k).dp)
+                .heightIn(min = (150 * k).dp)
+                .shadow((12 * k).dp, RectangleShape, ambientColor = Color.Black, spotColor = Color.Black)
+                .background(Brush.verticalGradient(listOf(NoteTop, NoteBottom)))
+                .padding(start = (14 * k).dp, end = (14 * k).dp, top = (18 * k).dp, bottom = (12 * k).dp),
+        ) {
+            Text(head, color = PPen, fontFamily = Caveat, fontWeight = FontWeight.Bold, fontSize = 25f.scaledSp(k), lineHeight = 1.em, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (body != null) {
+                Text(
+                    body, color = PPen, fontFamily = Caveat, fontWeight = FontWeight.Medium, fontSize = 23f.scaledSp(k), lineHeight = 1.05.em,
+                    maxLines = 4, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = (4 * k).dp),
+                )
+            }
+        }
+        Tape(Modifier.align(Alignment.TopCenter).size((72 * k).dp, (20 * k).dp).rotate(-4f))
+    }
+}
+
+/** A few notes stacked on the desk, with how many are waiting. */
+@Composable
+private fun NotePile(notices: Notices, k: Float) {
+    val label = noticeCountLabel(notices)
+    val note = (70 * k).dp
+    Box(Modifier.size(note).clearAndSetSemantics { contentDescription = label }) {
+        Box(Modifier.fillMaxSize().rotate(-6f).shadow((6 * k).dp, RectangleShape).background(Color(0xFFE0C877)))
+        Box(Modifier.fillMaxSize().rotate(3f).background(Color(0xFFEAD38A)))
+        Box(Modifier.fillMaxSize().rotate(8f).background(Brush.verticalGradient(listOf(NoteTop, NoteBottom))), contentAlignment = Alignment.Center) {
+            Text("${notices.count} new", color = PPen, fontFamily = Caveat, fontWeight = FontWeight.Bold, fontSize = 24f.scaledSp(k))
+        }
     }
 }
 
