@@ -93,6 +93,8 @@ data class AppSettings(
     val catCoat: String = "ginger",
 
     val onboardingDone: Boolean = false,
+    /** Phone-maker setup steps (see OemSetup) the person has opened. Android can't tell us if they're done. */
+    val oemStepsOpened: Set<String> = emptySet(),
 ) {
     fun isNight(time: LocalTime): Boolean = nightModeEnabled && isNightHours(time)
 

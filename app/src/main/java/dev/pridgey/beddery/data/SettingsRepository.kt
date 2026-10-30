@@ -75,6 +75,7 @@ class SettingsRepository private constructor(context: Context) {
         val odometerSeconds = booleanPreferencesKey("odometer_seconds")
         val catCoat = stringPreferencesKey("orb_cat")
         val onboarded = booleanPreferencesKey("onboarded")
+        val oemStepsOpened = stringSetPreferencesKey("oem_steps_opened")
     }
 
     private fun read(p: Preferences): AppSettings {
@@ -120,6 +121,7 @@ class SettingsRepository private constructor(context: Context) {
             odometerSeconds = p[Keys.odometerSeconds] ?: d.odometerSeconds,
             catCoat = p[Keys.catCoat] ?: d.catCoat,
             onboardingDone = p[Keys.onboarded] ?: d.onboardingDone,
+            oemStepsOpened = p[Keys.oemStepsOpened] ?: d.oemStepsOpened,
         )
     }
 
@@ -170,6 +172,7 @@ class SettingsRepository private constructor(context: Context) {
         p[Keys.odometerSeconds] = s.odometerSeconds
         p[Keys.catCoat] = s.catCoat
         p[Keys.onboarded] = s.onboardingDone
+        p[Keys.oemStepsOpened] = s.oemStepsOpened
     }
 
     companion object {

@@ -4,7 +4,17 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
 import android.util.LruCache
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -77,20 +87,28 @@ private object StillCache {
 
     private val io = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
+    /** Newest picture's key for each saver and screen size, whatever the look settings were. */
+    private val latest = HashMap<String, String>()
+
     fun get(key: String): Still? = cache.get(key)
 
-    fun put(key: String, still: Still) {
+    /** An older picture of the same saver (taken before a look setting changed), shown until a new one lands. */
+    fun previous(base: String): Still? = latest[base]?.let { cache.get(it) }
+
+    fun put(key: String, base: String, still: Still) {
         cache.put(key, still)
+        latest[base] = key
         version++
     }
 
-    // Pictures are also kept on disk, so the gallery opens with them already in place.
-    private fun file(dir: File, key: String) = File(dir, "stills/${Integer.toHexString(key.hashCode())}.jpg")
+    // Pictures are also kept on disk, so the gallery opens with them already in place. One file per
+    // saver and screen size: an out-of-date picture still beats an empty card, and it's retaken anyway.
+    private fun file(dir: File, base: String) = File(dir, "stills/${Integer.toHexString(base.hashCode())}.jpg")
 
-    fun save(dir: File, key: String, image: ImageBitmap) {
+    fun save(dir: File, base: String, image: ImageBitmap) {
         io.launch {
             runCatching {
-                val f = file(dir, key)
+                val f = file(dir, base)
                 f.parentFile?.mkdirs()
                 f.outputStream().use { image.asAndroidBitmap().compress(Bitmap.CompressFormat.JPEG, 88, it) }
             }.onFailure { Log.w("Beddery", "Couldn't save a thumbnail", it) }
@@ -98,13 +116,13 @@ private object StillCache {
     }
 
     /** Loads a saved picture, marked stale so it's retaken once it's on screen. */
-    suspend fun load(dir: File, key: String) {
+    suspend fun load(dir: File, key: String, base: String) {
         val image = withContext(Dispatchers.IO) {
-            val f = file(dir, key)
+            val f = file(dir, base)
             if (!f.exists()) return@withContext null
             BitmapFactory.decodeFile(f.path, BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.RGB_565 })
         } ?: return
-        if (get(key) == null) put(key, Still(image.asImageBitmap(), -1))
+        if (get(key) == null) put(key, base, Still(image.asImageBitmap(), -1))
     }
 }
 
@@ -178,13 +196,15 @@ fun SaverStill(
     val config = LocalConfiguration.current
     val vw = config.screenWidthDp.dp
     val vh = config.screenHeightDp.dp
-    val key = "${saver.id}|${config.screenWidthDp}x${config.screenHeightDp}|${settings.lookKey()}|${context.use24h}"
+    val base = "${saver.id}|${config.screenWidthDp}x${config.screenHeightDp}"
+    val key = "$base|${settings.lookKey()}|${context.use24h}"
     val minute = context.now.toEpochSecond(ZoneOffset.UTC) / 60
     // Reading the version recomposes this card when a picture lands.
-    val still = StillCache.version.let { StillCache.get(key) }
-    val fresh = still != null && still.minute == minute
+    val exact = StillCache.version.let { StillCache.get(key) }
+    val still = exact ?: StillCache.previous(base)
+    val fresh = exact != null && exact.minute == minute
     val dir = LocalContext.current.cacheDir
-    if (still == null) LaunchedEffect(key) { StillCache.load(dir, key) }
+    if (still == null) LaunchedEffect(key) { StillCache.load(dir, key, base) }
     if (!fresh) {
         DisposableEffect(key, minute) {
             scheduler.request(key, missing = still == null)
@@ -201,6 +221,8 @@ fun SaverStill(
     ) {
         if (still != null) {
             Image(still.image, null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
+        } else {
+            StillPlaceholder(saver)
         }
         if (live) {
             val layer = rememberGraphicsLayer()
@@ -240,8 +262,8 @@ fun SaverStill(
                     Log.w("Beddery", "Couldn't take a thumbnail of ${saver.id}", it)
                     StillCache.failed += saver.id
                 }.getOrNull()?.let {
-                    StillCache.put(key, Still(it, minute))
-                    StillCache.save(dir, key, it)
+                    StillCache.put(key, base, Still(it, minute))
+                    StillCache.save(dir, base, it)
                 }
                 scheduler.release(key)
             }
@@ -257,4 +279,20 @@ private fun shrink(image: ImageBitmap): ImageBitmap {
     val soft = if (src.config == Bitmap.Config.HARDWARE) src.copy(Bitmap.Config.ARGB_8888, false) else src
     val scaled = if (w == soft.width) soft else Bitmap.createScaledBitmap(soft, w, h, true)
     return scaled.copy(Bitmap.Config.RGB_565, false).asImageBitmap()
+}
+
+/** Shown until a card's first picture is ready: the saver's icon, gently pulsing. */
+@Composable
+private fun StillPlaceholder(saver: Saver) {
+    val pulse = rememberInfiniteTransition(label = "placeholder")
+    val alpha by pulse.animateFloat(
+        initialValue = 0.25f, targetValue = 0.6f,
+        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse), label = "alpha",
+    )
+    Box(
+        Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF1E1C26), Color(0xFF0E0D12)))),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(saver.icon, null, tint = Color.White, modifier = Modifier.size(36.dp).alpha(alpha))
+    }
 }

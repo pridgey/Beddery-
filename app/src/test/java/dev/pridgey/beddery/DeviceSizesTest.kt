@@ -15,6 +15,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import org.robolectric.shadows.ShadowBuild
 import java.io.File
 
 /**
@@ -81,4 +82,22 @@ class DeviceSizesTest {
     @Test
     @Config(qualifiers = "w800dp-h1280dp-xhdpi")
     fun tablet() = walk("tablet800")
+
+    /** Standby's checklist on a Xiaomi, with the phone-maker steps added. Tall so it fits in one picture. */
+    @Test
+    @Config(qualifiers = "w360dp-h1700dp-xhdpi")
+    fun xiaomiStandbyChecklist() {
+        ShadowBuild.setManufacturer("Xiaomi")
+        ShadowBuild.setBrand("Redmi")
+        compose.mainClock.autoAdvance = false
+        compose.mainClock.advanceTimeBy(1_000)
+        compose.onAllNodesWithText("Settings").onFirst().performClick()
+        compose.mainClock.advanceTimeBy(1_000)
+        compose.onAllNodesWithText("Starts the moment you plug in. Works on every phone.").onFirst().performClick()
+        // Settings are saved off the main thread: let real time pass until the checklist shows.
+        compose.mainClock.autoAdvance = true
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("Finish setting up").fetchSemanticsNodes().isNotEmpty() }
+        compose.mainClock.autoAdvance = false
+        snapshot("xiaomi_standby")
+    }
 }

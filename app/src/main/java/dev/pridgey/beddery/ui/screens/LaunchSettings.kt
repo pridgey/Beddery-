@@ -70,11 +70,20 @@ import dev.pridgey.beddery.MainViewModel
 import dev.pridgey.beddery.R
 import dev.pridgey.beddery.data.AppSettings
 import dev.pridgey.beddery.system.LaunchStatus
+import dev.pridgey.beddery.system.OemSetup
 
 private enum class Method { DREAM, STANDBY }
 
-/** One step of the setup checklist. [done] is null when Android won't tell us. */
-private class Step(val title: String, val detail: String, val done: Boolean?, val action: String?, val optional: Boolean = false, val onAction: () -> Unit = {})
+/** One step of the setup checklist. [done] is null when Android won't tell us; [unknown] then replaces the default wording. */
+private class Step(
+    val title: String,
+    val detail: String,
+    val done: Boolean?,
+    val action: String?,
+    val optional: Boolean = false,
+    val unknown: String? = null,
+    val onAction: () -> Unit = {},
+)
 
 /**
  * How Beddery starts, as one decision: pick a method (with a recommendation for this phone),
@@ -112,6 +121,18 @@ fun LaunchSection(settings: AppSettings, viewModel: MainViewModel) {
         }
     }
     val openDream = { context.tryStart(LaunchStatus.dreamSettingsIntent()); Unit }
+    val brand = remember { OemSetup.brand() }
+    val opened = stringResource(R.string.setup_opened)
+    val oemSteps = OemSetup.steps(brand).map { oem ->
+        // Android can't see these switches, so once opened the step counts as "probably done".
+        Step(
+            stringResource(oem.title), stringResource(oem.detail),
+            if (oem.id in settings.oemStepsOpened) null else false, stringResource(R.string.action_open), unknown = opened,
+        ) {
+            OemSetup.open(context, oem) { context.tryStart(it) }
+            viewModel.update { it.copy(oemStepsOpened = it.oemStepsOpened + oem.id) }
+        }
+    }
 
     val steps = when (method) {
         Method.DREAM -> listOf(
@@ -136,11 +157,12 @@ fun LaunchSection(settings: AppSettings, viewModel: MainViewModel) {
                 stringResource(R.string.setup_standby_full_screen), stringResource(R.string.setup_standby_full_screen_detail),
                 standby.fullScreenAllowed, stringResource(R.string.action_allow),
             ) { context.tryStart(LaunchStatus.fullScreenSettingsIntent(context)) },
-            Step(
+            // Phones with their own battery rules get those steps instead of Android's.
+            if (oemSteps.isEmpty()) Step(
                 stringResource(R.string.setup_standby_battery), stringResource(R.string.setup_standby_battery_detail),
                 standby.batteryUnrestricted, stringResource(R.string.action_open), optional = true,
-            ) { context.tryStart(LaunchStatus.batterySettingsIntent()) },
-        )
+            ) { context.tryStart(LaunchStatus.batterySettingsIntent()) } else null,
+        ) + oemSteps
         null -> emptyList()
     }
     val remaining = steps.count { !it.optional && it.done == false }
@@ -194,6 +216,12 @@ fun LaunchSection(settings: AppSettings, viewModel: MainViewModel) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp),
                     )
                     steps.forEachIndexed { i, step -> StepRow(i + 1, step) }
+                }
+                if (m == Method.STANDBY && brand != null) {
+                    Text(
+                        stringResource(R.string.oem_footer, stringResource(brand.label)), style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+                    )
                 }
                 if (m == Method.STANDBY) {
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
@@ -321,7 +349,7 @@ private fun StepRow(number: Int, step: Step) {
             Text(
                 when (step.done) {
                     true -> stringResource(R.string.setup_done)
-                    null -> stringResource(R.string.setup_unknown)
+                    null -> step.unknown ?: stringResource(R.string.setup_unknown)
                     false -> step.detail
                 },
             )
