@@ -95,6 +95,10 @@ data class AppSettings(
     val onboardingDone: Boolean = false,
     /** Phone-maker setup steps (see OemSetup) the person has opened. Android can't tell us if they're done. */
     val oemStepsOpened: Set<String> = emptySet(),
+    /** The person has opened a full-screen preview, so the swipe tip isn't needed any more. */
+    val previewTipSeen: Boolean = false,
+    /** Smaller gallery cards, three to a row on most phones. */
+    val galleryDense: Boolean = false,
 ) {
     fun isNight(time: LocalTime): Boolean = nightModeEnabled && isNightHours(time)
 

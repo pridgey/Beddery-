@@ -34,6 +34,24 @@ data class StandbyStatus(
 
 object LaunchStatus {
 
+    /**
+     * Required setup steps still to do, or null when no way to start has been chosen.
+     * Steps Android won't report on (and phone-maker steps once opened) don't count.
+     * The Settings checklist shows the same steps.
+     */
+    fun stepsLeft(
+        standbyEnabled: Boolean,
+        oemStepsOpened: Set<String>,
+        dream: DreamStatus,
+        standby: StandbyStatus,
+        brand: OemSetup.Brand? = OemSetup.brand(),
+    ): Int? = when {
+        standbyEnabled -> listOf(!standby.notificationsAllowed, !standby.fullScreenAllowed).count { it } +
+            OemSetup.steps(brand).count { it.id !in oemStepsOpened }
+        dream.available -> listOf(dream.selected, dream.whileCharging).count { it == false }
+        else -> null
+    }
+
     fun dream(context: Context): DreamStatus {
         val available = dreamSettingsIntent().resolveActivity(context.packageManager) != null
         // These keys aren't public API. Many phones still let us read them; if not, we just say "unknown".

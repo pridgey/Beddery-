@@ -34,7 +34,8 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -89,16 +90,22 @@ fun SaverDetailScreen(saverId: String, settings: AppSettings, viewModel: MainVie
                 Box {
                     SaverPreview(saver, settings, previewContext, Modifier.heightIn(max = 420.dp), corner = 28.dp)
                     FilledTonalIconButton(
-                        onClick = { context.startActivity(StandbyActivity.intent(context, preview = true, saverId = saver.id)) },
+                        onClick = {
+                            if (!settings.previewTipSeen) viewModel.update { it.copy(previewTipSeen = true) }
+                            context.startActivity(StandbyActivity.intent(context, preview = true, saverId = saver.id))
+                        },
                         modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp),
                     ) { Icon(Icons.Rounded.Fullscreen, stringResource(R.string.action_preview_full)) }
                 }
             }
-            Spacer(Modifier.height(8.dp))
-            Text(
-                stringResource(R.string.detail_preview_tip), style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
-            )
+            // Only until the person has tried the full-screen preview once.
+            if (!settings.previewTipSeen) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    stringResource(R.string.detail_preview_tip), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
+                )
+            }
             Spacer(Modifier.height(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(saver.icon, null, tint = MaterialTheme.colorScheme.primary)
@@ -137,15 +144,22 @@ fun SaverDetailScreen(saverId: String, settings: AppSettings, viewModel: MainVie
 
             FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (isCurrent) {
-                    OutlinedButton(onClick = {}, enabled = false) {
-                        Icon(Icons.Rounded.Check, null, Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.state_current))
+                    // A label, not a button: greyed-out buttons read as broken.
+                    Surface(shape = ButtonDefaults.shape, color = MaterialTheme.colorScheme.secondaryContainer) {
+                        Row(
+                            Modifier.heightIn(min = ButtonDefaults.MinHeight).padding(ButtonDefaults.ButtonWithIconContentPadding),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(Icons.Rounded.Check, null, Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.state_current_saver), style = MaterialTheme.typography.labelLarge)
+                        }
                     }
                 } else {
+                    // With shuffle on, picking one turns shuffle off, so the button says so.
                     Button(onClick = {
                         viewModel.update { it.copy(selectedSaverId = saver.id, shuffleEnabled = false) }
-                    }) { Text(stringResource(R.string.action_use)) }
+                    }) { Text(stringResource(if (settings.shuffleEnabled) R.string.action_use_instead else R.string.action_use)) }
                 }
                 FilterChip(
                     modifier = Modifier.align(Alignment.CenterVertically),

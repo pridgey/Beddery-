@@ -76,6 +76,8 @@ class SettingsRepository private constructor(context: Context) {
         val catCoat = stringPreferencesKey("orb_cat")
         val onboarded = booleanPreferencesKey("onboarded")
         val oemStepsOpened = stringSetPreferencesKey("oem_steps_opened")
+        val previewTipSeen = booleanPreferencesKey("preview_tip_seen")
+        val galleryDense = booleanPreferencesKey("gallery_dense")
     }
 
     private fun read(p: Preferences): AppSettings {
@@ -122,6 +124,8 @@ class SettingsRepository private constructor(context: Context) {
             catCoat = p[Keys.catCoat] ?: d.catCoat,
             onboardingDone = p[Keys.onboarded] ?: d.onboardingDone,
             oemStepsOpened = p[Keys.oemStepsOpened] ?: d.oemStepsOpened,
+            previewTipSeen = p[Keys.previewTipSeen] ?: d.previewTipSeen,
+            galleryDense = p[Keys.galleryDense] ?: d.galleryDense,
         )
     }
 
@@ -173,6 +177,8 @@ class SettingsRepository private constructor(context: Context) {
         p[Keys.catCoat] = s.catCoat
         p[Keys.onboarded] = s.onboardingDone
         p[Keys.oemStepsOpened] = s.oemStepsOpened
+        p[Keys.previewTipSeen] = s.previewTipSeen
+        p[Keys.galleryDense] = s.galleryDense
     }
 
     companion object {

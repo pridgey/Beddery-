@@ -18,6 +18,8 @@
     <string name="action_add_to_shuffle">Add to shuffle</string>
     <string name="action_turn_on_shuffle">Turn on shuffle</string>
     <string name="state_current">Current</string>
+    <string name="state_current_saver">Your screensaver</string>
+    <string name="action_use_instead">Use instead of shuffle</string>
     <string name="action_use_at_night">Use at night</string>
     <string name="action_night_screen">Night screen</string>
     <string name="detail_night_note">Shown instead from %1$s to %2$s. Change the hours under Night.</string>
@@ -38,6 +40,9 @@
     <string name="category_scenes">Scenes</string>
     <string name="category_abstract">Abstract</string>
     <string name="now_showing">Showing %1$s while charging</string>
+    <string name="now_picked">%1$s is picked. It starts once setup is finished.</string>
+    <string name="action_cards_smaller">Smaller cards</string>
+    <string name="action_cards_larger">Larger cards</string>
     <plurals name="now_shuffling">
         <item quantity="one">Shuffling %1$d screensaver every %2$d min</item>
         <item quantity="other">Shuffling %1$d screensavers every %2$d min</item>
@@ -205,7 +210,7 @@
     <string name="shuffle">Shuffle screensavers</string>
     <string name="shuffle_desc">Rotate through the ones marked \"In shuffle\", or all of them if none are marked</string>
     <string name="shuffle_every">Change every</string>
-    <string name="shuffle_is_on">Shuffle is on. Turn it off in Settings to show just one screensaver.</string>
+    <string name="shuffle_is_on">Shuffle is on. Using just this screensaver turns shuffle off.</string>
     <string name="minutes_short">%1$d min</string>
     <string name="about_version">Version %1$s</string>
     <string name="about_privacy">Privacy policy</string>

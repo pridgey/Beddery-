@@ -273,7 +273,7 @@ private fun Chrome(
                                     Spacer(Modifier.width(8.dp))
                                     Text(stringResource(R.string.preview_showing_while_charging))
                                 } else {
-                                    Text(stringResource(R.string.action_use))
+                                    Text(stringResource(if (settings.shuffleEnabled) R.string.action_use_instead else R.string.action_use))
                                 }
                             }
                         }

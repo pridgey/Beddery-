@@ -35,6 +35,9 @@ import androidx.compose.material.icons.rounded.AutoAwesomeMosaic
 import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.GridView
+import androidx.compose.material.icons.rounded.ViewModule
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.NightsStay
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Shuffle
@@ -101,7 +104,19 @@ fun HomeScreen(settings: AppSettings, viewModel: MainViewModel, onOpenSaver: (St
             TopAppBar(
                 title = { Text(stringResource(if (tab == 0) R.string.app_name else R.string.tab_settings)) },
                 actions = {
-                    IconButton(onClick = { context.startActivity(StandbyActivity.intent(context, preview = true)) }) {
+                    if (tab == 0) {
+                        val dense = settings.galleryDense
+                        IconButton(onClick = { viewModel.update { it.copy(galleryDense = !dense) } }) {
+                            Icon(
+                                if (dense) Icons.Rounded.GridView else Icons.Rounded.ViewModule,
+                                contentDescription = stringResource(if (dense) R.string.action_cards_larger else R.string.action_cards_smaller),
+                            )
+                        }
+                    }
+                    IconButton(onClick = {
+                        if (!settings.previewTipSeen) viewModel.update { it.copy(previewTipSeen = true) }
+                        context.startActivity(StandbyActivity.intent(context, preview = true))
+                    }) {
                         Icon(Icons.Rounded.PlayArrow, contentDescription = stringResource(R.string.action_preview))
                     }
                 },
@@ -152,6 +167,9 @@ private fun GalleryTab(
             (!shuffleOnly || !hasShuffleList || it.id in settings.shuffleIds)
     }
     val showUpdate = rememberUpdateBannerVisible()
+    val stepsLeft = rememberStepsLeft(settings)
+    val ready = stepsLeft == 0
+    val dense = settings.galleryDense
     val grid = rememberLazyGridState()
     val context = LocalContext.current
     // Two pictures at once fills the screen about twice as fast; low-memory phones stay at one.
@@ -172,20 +190,23 @@ private fun GalleryTab(
     }
     CompositionLocalProvider(LocalStillScheduler provides stills) {
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(152.dp),
+            columns = GridCells.Adaptive(if (dense) 104.dp else 152.dp),
             state = grid,
             modifier = Modifier.fillMaxSize(),
             contentPadding = padding + PaddingValues(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(if (dense) 10.dp else 12.dp),
+            verticalArrangement = Arrangement.spacedBy(if (dense) 10.dp else 16.dp),
         ) {
             if (!settings.onboardingDone) {
                 item(span = { GridItemSpan(maxLineSpan) }, key = "setup") {
                     SetupCard(onSetup = onSetup, onDismiss = { viewModel.update { it.copy(onboardingDone = true) } })
                 }
+            } else if (!ready) {
+                // The big card is gone, but Beddery still won't start on its own: keep a small reminder.
+                item(span = { GridItemSpan(maxLineSpan) }, key = "finish") { FinishSetupRow(stepsLeft, onSetup) }
             }
             if (showUpdate) item(span = { GridItemSpan(maxLineSpan) }, key = "update") { UpdateBanner() }
-            item(span = { GridItemSpan(maxLineSpan) }, key = "now") { NowShowing(settings) }
+            item(span = { GridItemSpan(maxLineSpan) }, key = "now") { NowShowing(settings, ready) }
             item(span = { GridItemSpan(maxLineSpan) }, key = "filters") {
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
@@ -217,7 +238,7 @@ private fun GalleryTab(
                 }
             }
             items(savers, key = { it.id }) { saver ->
-                SaverCard(saver, settings, previewContext, onClick = { onOpenSaver(saver.id) })
+                SaverCard(saver, settings, previewContext, dense, onClick = { onOpenSaver(saver.id) })
             }
         }
     }
@@ -250,13 +271,40 @@ private fun SetupCard(onSetup: () -> Unit, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun NowShowing(settings: AppSettings) {
+private fun FinishSetupRow(stepsLeft: Int?, onSetup: () -> Unit) {
+    Card(
+        onClick = onSetup,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+        shape = RoundedCornerShape(20.dp),
+    ) {
+        Row(Modifier.padding(start = 16.dp, top = 12.dp, end = 8.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Rounded.NightsStay, null, tint = MaterialTheme.colorScheme.onTertiaryContainer)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    stringResource(R.string.setup_steps), style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+                Text(
+                    if (stepsLeft == null) stringResource(R.string.setup_status_choose)
+                    else pluralStringResource(R.plurals.setup_status_steps, stepsLeft, stepsLeft),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+            }
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onTertiaryContainer)
+        }
+    }
+}
+
+/** What will show while charging. Until setup is finished it only says what's picked, not that it's showing. */
+@Composable
+private fun NowShowing(settings: AppSettings, ready: Boolean) {
     val label = if (settings.shuffleEnabled) {
         val count = settings.shuffleIds.count { Savers.findOrNull(it) != null }.takeIf { it > 0 } ?: Savers.all.size
         if (settings.shuffleMode == ShuffleMode.ON_START) pluralStringResource(R.plurals.now_shuffling_start, count, count)
         else pluralStringResource(R.plurals.now_shuffling, count, count, settings.shuffleMinutes)
     } else {
-        stringResource(R.string.now_showing, saverName(Savers.find(settings.selectedSaverId)))
+        stringResource(if (ready) R.string.now_showing else R.string.now_picked, saverName(Savers.find(settings.selectedSaverId)))
     }
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -286,43 +334,51 @@ fun AppSettings.isInRotation(id: String): Boolean =
     if (shuffleEnabled) shuffleIds.isEmpty() || id in shuffleIds else selectedSaverId == id
 
 @Composable
-private fun SaverCard(saver: Saver, settings: AppSettings, context: SaverContext, onClick: () -> Unit) {
+private fun SaverCard(saver: Saver, settings: AppSettings, context: SaverContext, dense: Boolean, onClick: () -> Unit) {
     val active = settings.isInRotation(saver.id)
     val activeLabel = stringResource(if (settings.shuffleEnabled) R.string.state_in_shuffle else R.string.state_current)
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(if (dense) 18.dp else 24.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (active) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer,
         ),
         modifier = Modifier.semantics { if (active) stateDescription = activeLabel },
     ) {
         Box {
-            SaverStill(saver, settings, context, Modifier.fillMaxWidth().padding(8.dp))
-            if (saver.refined) RefinedBadge(Modifier.align(Alignment.TopStart).padding(16.dp), onDark = true)
+            SaverStill(saver, settings, context, Modifier.fillMaxWidth().padding(if (dense) 6.dp else 8.dp))
+            if (saver.refined && !dense) RefinedBadge(Modifier.align(Alignment.TopStart).padding(16.dp), onDark = true)
             if (active) {
                 Box(
                     Modifier
                         .align(Alignment.TopEnd)
-                        .padding(16.dp)
-                        .size(28.dp)
+                        .padding(if (dense) 11.dp else 16.dp)
+                        .size(if (dense) 22.dp else 28.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         if (settings.shuffleEnabled) Icons.Rounded.Shuffle else Icons.Rounded.Check, null,
-                        tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(if (dense) 13.dp else 16.dp),
                     )
                 }
             }
         }
-        Row(Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp, top = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(saver.icon, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.width(8.dp))
-            Column {
-                Text(stringResource(saver.title), style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(stringResource(saver.category.label), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (dense) {
+            // Small cards keep just the name; the group chips already say which group it's in.
+            Text(
+                saverName(saver), style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(start = 10.dp, end = 10.dp, bottom = 10.dp, top = 0.dp),
+            )
+        } else {
+            Row(Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp, top = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(saver.icon, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.width(8.dp))
+                Column {
+                    Text(stringResource(saver.title), style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(stringResource(saver.category.label), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         }
     }

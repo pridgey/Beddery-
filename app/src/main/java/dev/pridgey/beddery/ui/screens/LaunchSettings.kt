@@ -85,6 +85,21 @@ private class Step(
     val onAction: () -> Unit = {},
 )
 
+/** [LaunchStatus.stepsLeft], checked again each time the app comes back from Android's settings. */
+@Composable
+fun rememberStepsLeft(settings: AppSettings): Int? {
+    val context = LocalContext.current
+    var dream by remember { mutableStateOf(LaunchStatus.dream(context)) }
+    var standby by remember { mutableStateOf(LaunchStatus.standby(context)) }
+    LifecycleResumeEffect(Unit) {
+        dream = LaunchStatus.dream(context)
+        standby = LaunchStatus.standby(context)
+        onPauseOrDispose { }
+    }
+    val brand = remember { OemSetup.brand() }
+    return LaunchStatus.stepsLeft(settings.standbyEnabled, settings.oemStepsOpened, dream, standby, brand)
+}
+
 /**
  * How Beddery starts, as one decision: pick a method (with a recommendation for this phone),
  * then follow a short checklist that ticks itself off as you go.
@@ -165,7 +180,7 @@ fun LaunchSection(settings: AppSettings, viewModel: MainViewModel) {
         ) + oemSteps
         null -> emptyList()
     }
-    val remaining = steps.count { !it.optional && it.done == false }
+    val remaining = LaunchStatus.stepsLeft(settings.standbyEnabled, settings.oemStepsOpened, dream, standby, brand) ?: 0
 
     SectionHeader(stringResource(R.string.section_launch))
     SettingsGroup {

@@ -65,7 +65,7 @@ class AppScreensTest {
         snapshot("detail_flip")
         compose.onNodeWithText("Use this screensaver").performClick()
         // Settings are saved on a background thread; give it real time to land.
-        waitFor { compose.onAllNodesWithText("Current").fetchSemanticsNodes().isNotEmpty() }
+        waitFor { compose.onAllNodesWithText("Your screensaver").fetchSemanticsNodes().isNotEmpty() }
         compose.activity.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
         compose.mainClock.advanceTimeBy(1_500)
 
