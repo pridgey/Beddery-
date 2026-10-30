@@ -210,7 +210,7 @@
     <string name="about_privacy">Privacy policy</string>
     <string name="about_privacy_summary">No accounts, no ads, no tracking</string>
     <string name="about_licenses">Open-source licenses</string>
-    <string name="privacy_policy_url" translatable="false">https://pridgey.github.io/Beddery-/privacy.html</string>
+    <string name="privacy_policy_url" translatable="false">https://pridgey.github.io/Beddery/privacy.html</string>
     <string name="about_weather_credit">Weather data by Open-Meteo.com (CC BY 4.0).</string>
 
     <!-- Polish, previews, easter eggs -->

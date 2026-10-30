@@ -95,9 +95,11 @@ latest build is always at **Releases → Latest**. Pull requests only build. You
 
 ### Release signing (optional)
 
-Without a keystore, CI signs the release APK with a throwaway debug key. It installs fine, but each CI
-run's APK has a different signature, so you'll need to uninstall before updating. To sign properly,
-add these repository secrets:
+The two versions use separate keys. Without a keystore, CI signs that version with a throwaway debug
+key: it installs fine, but each run has a different signature, so you'd need to uninstall before updating.
+
+**GitHub version.** This key signs the APK people install, so it must never change, or the built-in
+updater's downloads will refuse to install over the old version.
 
 | Secret | Value |
 | --- | --- |
@@ -106,11 +108,24 @@ add these repository secrets:
 | `KEY_ALIAS` | key alias |
 | `KEY_PASSWORD` | key password |
 
+**Play version.** This is only the *upload* key. With Play App Signing, Google re-signs the app with
+its own key, and you can ask Google to reset a lost upload key.
+
+| Secret | Value |
+| --- | --- |
+| `PLAY_KEYSTORE_BASE64` | `base64 -w0 play-upload.jks` |
+| `PLAY_KEYSTORE_PASSWORD` | keystore password |
+| `PLAY_KEY_ALIAS` | key alias |
+| `PLAY_KEY_PASSWORD` | key password |
+
 Create a keystore with:
 
 ```bash
-keytool -genkeypair -v -keystore release.jks -keyalg RSA -keysize 4096 -validity 10000 -alias beddery
+keytool -genkeypair -v -keystore play-upload.jks -keyalg RSA -keysize 4096 -validity 10000 -alias upload
 ```
+
+For a local signed build, set the same names as environment variables, with `BEDDERY_KEYSTORE` /
+`PLAY_KEYSTORE` pointing at the `.jks` file (and `BEDDERY_` in place of the bare `KEY_` names).
 
 ## Privacy
 

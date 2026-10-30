@@ -9,7 +9,12 @@ plugins {
 // CI passes these in; local builds fall back to sensible defaults.
 val ciVersionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
 val ciVersionName = System.getenv("VERSION_NAME") ?: "1.0.0"
-val releaseKeystore = System.getenv("BEDDERY_KEYSTORE")?.let { file(it) }?.takeIf { it.exists() }
+
+// Each distribution has its own key. GitHub's signs the APKs people install directly (and must never
+// change, or updates stop installing). Play's is only the upload key: Google re-signs for the store.
+fun keystoreFrom(prefix: String) = System.getenv("${prefix}_KEYSTORE")?.let { file(it) }?.takeIf { it.exists() }
+val githubKeystore = keystoreFrom("BEDDERY")
+val playKeystore = keystoreFrom("PLAY")
 
 android {
     namespace = "dev.pridgey.beddery"
@@ -24,6 +29,26 @@ android {
         resValue("string", "dream_settings_component", "dev.pridgey.beddery/dev.pridgey.beddery.MainActivity")
     }
 
+    // Without a keystore, release builds use the debug key so they still install.
+    signingConfigs {
+        if (githubKeystore != null) {
+            create("github") {
+                storeFile = githubKeystore
+                storePassword = System.getenv("BEDDERY_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("BEDDERY_KEY_ALIAS")
+                keyPassword = System.getenv("BEDDERY_KEY_PASSWORD")
+            }
+        }
+        if (playKeystore != null) {
+            create("play") {
+                storeFile = playKeystore
+                storePassword = System.getenv("PLAY_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("PLAY_KEY_ALIAS")
+                keyPassword = System.getenv("PLAY_KEY_PASSWORD")
+            }
+        }
+    }
+
     // Two ways to ship the same app:
     //  - play: for Google Play, which delivers updates itself. No updater, no install permission.
     //  - github: the APK on GitHub Releases, which checks for and installs its own updates.
@@ -31,23 +56,14 @@ android {
     productFlavors {
         create("play") {
             dimension = "distribution"
+            signingConfig = signingConfigs.findByName("play") ?: signingConfigs.getByName("debug")
         }
         create("github") {
             dimension = "distribution"
             // Where the app looks for updates. A read-only token is only needed while the repo is private.
-            buildConfigField("String", "UPDATE_REPO", "\"${System.getenv("UPDATE_REPO") ?: "pridgey/Beddery-"}\"")
+            buildConfigField("String", "UPDATE_REPO", "\"${System.getenv("UPDATE_REPO") ?: "pridgey/Beddery"}\"")
             buildConfigField("String", "UPDATE_TOKEN", "\"${System.getenv("UPDATE_TOKEN") ?: ""}\"")
-        }
-    }
-
-    signingConfigs {
-        if (releaseKeystore != null) {
-            create("release") {
-                storeFile = releaseKeystore
-                storePassword = System.getenv("BEDDERY_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("BEDDERY_KEY_ALIAS")
-                keyPassword = System.getenv("BEDDERY_KEY_PASSWORD")
-            }
+            signingConfig = signingConfigs.findByName("github") ?: signingConfigs.getByName("debug")
         }
     }
 
@@ -61,8 +77,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // Without a real keystore, sign with the debug key so the APK is still installable.
-            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+            // No signingConfig here: a build type's would override the per-flavor keys above.
         }
     }
 

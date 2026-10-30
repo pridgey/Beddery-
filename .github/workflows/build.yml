@@ -22,8 +22,10 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.name }}
     env:
-      # Release signing is optional. Without these secrets the release APK is signed with a debug key.
+      # Release signing is optional. Without these secrets release builds are signed with a debug key.
+      # KEYSTORE_* signs the GitHub APK; PLAY_KEYSTORE_* is the separate Play upload key.
       HAS_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 != '' }}
+      HAS_PLAY_KEYSTORE: ${{ secrets.PLAY_KEYSTORE_BASE64 != '' }}
       VERSION_CODE: ${{ github.run_number }}
 
     steps:
@@ -47,7 +49,7 @@ jobs:
           echo "VERSION_NAME=$NAME" >> "$GITHUB_ENV"
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
 
-      - name: Decode release keystore
+      - name: Decode GitHub release keystore
         if: env.HAS_KEYSTORE == 'true'
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
@@ -55,11 +57,22 @@ jobs:
           echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
           echo "BEDDERY_KEYSTORE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
 
+      - name: Decode Play upload keystore
+        if: env.HAS_PLAY_KEYSTORE == 'true'
+        env:
+          PLAY_KEYSTORE_BASE64: ${{ secrets.PLAY_KEYSTORE_BASE64 }}
+        run: |
+          echo "$PLAY_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/play-upload.jks"
+          echo "PLAY_KEYSTORE=$RUNNER_TEMP/play-upload.jks" >> "$GITHUB_ENV"
+
       - name: Lint, unit tests and build
         env:
           BEDDERY_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           BEDDERY_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           BEDDERY_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          PLAY_KEYSTORE_PASSWORD: ${{ secrets.PLAY_KEYSTORE_PASSWORD }}
+          PLAY_KEY_ALIAS: ${{ secrets.PLAY_KEY_ALIAS }}
+          PLAY_KEY_PASSWORD: ${{ secrets.PLAY_KEY_PASSWORD }}
         # github = the self-updating APK for GitHub Releases; play = the bundle for Google Play.
         run: >-
           ./gradlew lintGithubDebug lintPlayRelease testGithubDebugUnitTest
