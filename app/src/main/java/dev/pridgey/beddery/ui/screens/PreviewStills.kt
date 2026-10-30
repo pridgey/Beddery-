@@ -127,28 +127,30 @@ private object StillCache {
 }
 
 /**
- * Takes one picture at a time and stays out of the way of scrolling: a scroll stops the picture
- * being taken (it's retried later), and cards with no picture yet go before clock refreshes.
+ * Takes a picture or two at a time ([parallel]) and stays out of the way of scrolling: a scroll
+ * stops pictures being taken (they're retried later), and cards with no picture yet go before
+ * clock refreshes.
  */
 @Stable
-class StillScheduler {
+class StillScheduler(private val parallel: Int = 1) {
     private val queue = ArrayList<String>()
-    var active by mutableStateOf<String?>(null)
-        private set
+    private val running = mutableStateListOf<String>()
     var paused = false
         set(value) {
             field = value
             if (value) {
                 // Building a full-size screensaver mid-scroll is what made the list hiccup.
-                active?.let { queue.add(0, it) }
-                active = null
+                queue.addAll(0, running)
+                running.clear()
             }
             pump()
         }
 
+    fun isActive(key: String) = key in running
+
     /** [missing]: the card shows nothing yet, so it jumps ahead of cards that only need a fresher clock. */
     fun request(key: String, missing: Boolean = false) {
-        if (key == active) return
+        if (key in running) return
         queue.remove(key)
         if (missing) queue.add(queue.indexOfFirst { it !in missingKeys }.let { if (it < 0) queue.size else it }, key) else queue += key
         if (missing) missingKeys += key else missingKeys -= key
@@ -160,14 +162,11 @@ class StillScheduler {
     fun release(key: String) {
         queue.remove(key)
         missingKeys -= key
-        if (active == key) {
-            active = null
-            pump()
-        }
+        if (running.remove(key)) pump()
     }
 
     private fun pump() {
-        if (active == null && !paused && queue.isNotEmpty()) active = queue.removeAt(0)
+        while (running.size < parallel && !paused && queue.isNotEmpty()) running += queue.removeAt(0)
     }
 }
 
@@ -211,7 +210,7 @@ fun SaverStill(
             onDispose { scheduler.release(key) }
         }
     }
-    val live = !fresh && scheduler.active == key
+    val live = !fresh && scheduler.isActive(key)
     BoxWithConstraints(
         modifier
             .aspectRatio(vw / vh)

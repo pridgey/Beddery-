@@ -2,6 +2,7 @@ package dev.pridgey.beddery.ui.screens
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import android.app.ActivityManager
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -146,7 +147,12 @@ private fun GalleryTab(
     val savers = Savers.all.filter { (filter == null || it.category == filter) && (!refinedOnly || it.refined) }
     val showUpdate = rememberUpdateBannerVisible()
     val grid = rememberLazyGridState()
-    val stills = remember { StillScheduler() }
+    val context = LocalContext.current
+    // Two pictures at once fills the screen about twice as fast; low-memory phones stay at one.
+    val stills = remember {
+        val lowRam = context.getSystemService(ActivityManager::class.java)?.isLowRamDevice ?: true
+        StillScheduler(parallel = if (lowRam) 1 else 2)
+    }
     LaunchedEffect(grid) {
         snapshotFlow { grid.isScrollInProgress }.collectLatest { scrolling ->
             if (scrolling) {
