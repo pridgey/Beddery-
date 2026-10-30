@@ -147,7 +147,7 @@ fun Context.tryStart(intent: Intent): Boolean = try {
     false
 }
 
-private val itemColors @Composable get() = ListItemDefaults.colors(containerColor = Color.Transparent)
+internal val itemColors @Composable get() = ListItemDefaults.colors(containerColor = Color.Transparent)
 
 private enum class StatusKind { Good, Info, Warning, Off }
 
@@ -601,6 +601,7 @@ private fun AboutSection() {
             supportingContent = { Text(stringResource(R.string.about_version, BuildConfig.VERSION_NAME)) },
         )
         UpdateRow()
+        SupportRow()
         val context = LocalContext.current
         val privacyUrl = stringResource(R.string.privacy_policy_url)
         ListItem(

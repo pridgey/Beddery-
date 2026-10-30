@@ -46,6 +46,7 @@ Shared features:
   every 5–60 minutes.
 - **Small clock overlay** on scenic screensavers, plus next alarm and charge time remaining.
 - Accent colors, 12/24-hour clock, brightness override.
+- **Free, no ads.** Optional tips: Google Play tips in the Play version, a Ko-fi link in the GitHub version.
 - A few small surprises. Try tapping things in preview, or with "Double-tap to close" turned on.
 
 ## How it starts
@@ -72,7 +73,10 @@ Requirements: JDK 17 and the Android SDK (API 36).
 Beddery comes in two versions built from the same code:
 
 - **play**: for Google Play. Play delivers updates, so this version has no updater and no install permission.
+  Tips use Google Play Billing: create one-time consumable products `tip_small`, `tip_medium` and `tip_large`
+  in Play Console.
 - **github**: the APK on GitHub Releases. It checks GitHub for new versions and installs them itself.
+  Set `KOFI_URL` (environment variable, or a repository variable for CI) to show a Ko-fi tip link in Settings.
 
 ```bash
 ./gradlew assembleGithubDebug        # app/build/outputs/apk/github/debug/

@@ -73,6 +73,8 @@ jobs:
           PLAY_KEYSTORE_PASSWORD: ${{ secrets.PLAY_KEYSTORE_PASSWORD }}
           PLAY_KEY_ALIAS: ${{ secrets.PLAY_KEY_ALIAS }}
           PLAY_KEY_PASSWORD: ${{ secrets.PLAY_KEY_PASSWORD }}
+          # Ko-fi page for the GitHub version's tip link (a repo variable, not a secret).
+          KOFI_URL: ${{ vars.KOFI_URL }}
         # github = the self-updating APK for GitHub Releases; play = the bundle for Google Play.
         run: >-
           ./gradlew lintGithubDebug lintPlayRelease testGithubDebugUnitTest

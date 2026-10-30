@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="support_tip">Leave a tip</string>
+    <string name="support_summary">Beddery is free with no ads. If you enjoy it, a tip keeps it going.</string>
+    <string name="support_body">Tips are optional and don\'t unlock anything. Every screensaver stays free. Thank you for helping keep it that way.</string>
+    <string name="support_thanks">Thank you!</string>
+    <string name="support_thanks_short">Thanks for supporting Beddery ♥</string>
+    <string name="support_unavailable">Tips aren\'t available right now. Check that you\'re signed in to Google Play.</string>
+</resources>

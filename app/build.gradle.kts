@@ -63,6 +63,8 @@ android {
             // Where the app looks for updates. A read-only token is only needed while the repo is private.
             buildConfigField("String", "UPDATE_REPO", "\"${System.getenv("UPDATE_REPO") ?: "pridgey/Beddery"}\"")
             buildConfigField("String", "UPDATE_TOKEN", "\"${System.getenv("UPDATE_TOKEN") ?: ""}\"")
+            // The Support row is hidden until this is set.
+            buildConfigField("String", "KOFI_URL", "\"${System.getenv("KOFI_URL") ?: ""}\"")
             signingConfig = signingConfigs.findByName("github") ?: signingConfigs.getByName("debug")
         }
     }
@@ -137,6 +139,8 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
     debugImplementation(libs.androidx.compose.ui.tooling)
+    // Tips in the Play version go through Google Play. The GitHub version links to Ko-fi instead.
+    "playImplementation"(libs.play.billing)
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
