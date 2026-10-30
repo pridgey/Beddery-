@@ -58,6 +58,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
@@ -149,7 +150,9 @@ fun LaunchSection(settings: AppSettings, viewModel: MainViewModel) {
         Column(Modifier.padding(16.dp)) {
             StatusLine(method, remaining, steps.any { it.done == null })
             Spacer(Modifier.height(16.dp))
-            Row(Modifier.height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Side by side normally; stacked when large text would squeeze each card to a few letters a line.
+            val stacked = LocalDensity.current.fontScale >= LARGE_TEXT
+            val methodCards: @Composable (Modifier) -> Unit = { cardModifier ->
                 MethodCard(
                     icon = Icons.Rounded.Bedtime,
                     title = stringResource(R.string.dream_title),
@@ -157,7 +160,7 @@ fun LaunchSection(settings: AppSettings, viewModel: MainViewModel) {
                     selected = method == Method.DREAM,
                     recommended = recommended == Method.DREAM,
                     enabled = dream.available,
-                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    modifier = cardModifier,
                 ) { choose(Method.DREAM) }
                 MethodCard(
                     icon = Icons.Rounded.Power,
@@ -166,8 +169,15 @@ fun LaunchSection(settings: AppSettings, viewModel: MainViewModel) {
                     selected = method == Method.STANDBY,
                     recommended = recommended == Method.STANDBY,
                     enabled = true,
-                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    modifier = cardModifier,
                 ) { choose(Method.STANDBY) }
+            }
+            if (stacked) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { methodCards(Modifier.fillMaxWidth()) }
+            } else {
+                Row(Modifier.height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    methodCards(Modifier.weight(1f).fillMaxHeight())
+                }
             }
             TextButton(onClick = { comparing = true }, modifier = Modifier.padding(top = 4.dp)) {
                 Icon(Icons.AutoMirrored.Rounded.HelpOutline, null, Modifier.size(18.dp))

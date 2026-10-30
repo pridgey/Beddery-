@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="update_title">Updates</string>
+    <string name="update_check">Check</string>
+    <string name="update_checking">Checking…</string>
+    <string name="update_up_to_date">You have the latest version</string>
+    <string name="update_tap_to_check">Check GitHub for a newer version</string>
+    <string name="update_available">Beddery %s is out</string>
+    <string name="update_install">Update</string>
+    <string name="update_downloading">Downloading %d%%</string>
+    <string name="update_installing">Installing…</string>
+    <string name="update_permission">Allow Beddery to install updates</string>
+    <string name="update_permission_action">Allow</string>
+    <string name="update_failed">Couldn’t update: %s</string>
+    <string name="update_retry">Retry</string>
+    <string name="update_debug">Updates come to release builds</string>
+    <string name="update_banner_body">A new version is ready to install. Your settings stay as they are.</string>
+</resources>

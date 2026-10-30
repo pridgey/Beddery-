@@ -22,6 +22,7 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -35,6 +36,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.pridgey.beddery.R
 import dev.pridgey.beddery.system.UpdateState
 import dev.pridgey.beddery.system.Updater
+import dev.pridgey.beddery.system.showsBanner
+
+// GitHub builds update themselves from GitHub releases. The Play build has its own copy of these
+// functions that do nothing, since Play handles updates there.
+
+/** Checks GitHub for a newer release, at most every few hours. */
+fun checkForUpdatesIfDue(context: Context) = Updater.checkIfDue(context)
+
+/** Whether the gallery should show [UpdateBanner]. */
+@Composable
+fun rememberUpdateBannerVisible(): Boolean = Updater.state.collectAsStateWithLifecycle().value.showsBanner
 
 /** Picks up an update after the user grants install permission and returns. */
 @Composable

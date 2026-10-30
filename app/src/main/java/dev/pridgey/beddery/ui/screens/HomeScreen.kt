@@ -71,6 +71,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.pridgey.beddery.MainViewModel
 import dev.pridgey.beddery.R
@@ -82,9 +83,6 @@ import dev.pridgey.beddery.savers.SaverContext
 import dev.pridgey.beddery.savers.Savers
 import dev.pridgey.beddery.savers.rememberSaverContext
 import dev.pridgey.beddery.standby.StandbyActivity
-import dev.pridgey.beddery.system.Updater
-import dev.pridgey.beddery.system.showsBanner
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /** How long the gallery must sit still before thumbnails are drawn again. */
 private const val STILL_SETTLE_MS = 450L
@@ -94,7 +92,7 @@ private const val STILL_SETTLE_MS = 450L
 fun HomeScreen(settings: AppSettings, viewModel: MainViewModel, onOpenSaver: (String) -> Unit) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val context = LocalContext.current
-    LaunchedEffect(Unit) { Updater.checkIfDue(context) }
+    LaunchedEffect(Unit) { checkForUpdatesIfDue(context) }
     val scroll = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
         modifier = Modifier.nestedScroll(scroll.nestedScrollConnection),
@@ -146,7 +144,7 @@ private fun GalleryTab(
     var refinedOnly by rememberSaveable { mutableStateOf(false) }
     val previewContext = rememberSaverContext(settings, preview = true)
     val savers = Savers.all.filter { (filter == null || it.category == filter) && (!refinedOnly || it.refined) }
-    val update by Updater.state.collectAsStateWithLifecycle()
+    val showUpdate = rememberUpdateBannerVisible()
     val grid = rememberLazyGridState()
     val stills = remember { StillScheduler() }
     LaunchedEffect(grid) {
@@ -174,7 +172,7 @@ private fun GalleryTab(
                     SetupCard(onSetup = onSetup, onDismiss = { viewModel.update { it.copy(onboardingDone = true) } })
                 }
             }
-            if (update.showsBanner) item(span = { GridItemSpan(maxLineSpan) }, key = "update") { UpdateBanner() }
+            if (showUpdate) item(span = { GridItemSpan(maxLineSpan) }, key = "update") { UpdateBanner() }
             item(span = { GridItemSpan(maxLineSpan) }, key = "now") { NowShowing(settings) }
             item(span = { GridItemSpan(maxLineSpan) }, key = "filters") {
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -303,7 +301,7 @@ private fun SaverCard(saver: Saver, settings: AppSettings, context: SaverContext
             Icon(saver.icon, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(8.dp))
             Column {
-                Text(stringResource(saver.title), style = MaterialTheme.typography.titleSmall, maxLines = 1)
+                Text(stringResource(saver.title), style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(stringResource(saver.category.label), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }

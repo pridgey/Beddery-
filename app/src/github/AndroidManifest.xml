@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- GitHub build only: Beddery downloads and installs its own updates from GitHub releases. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <application>
+        <!-- Results from installing a downloaded update. -->
+        <receiver
+            android:name=".system.UpdateReceiver"
+            android:exported="false" />
+    </application>
+</manifest>

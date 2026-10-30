@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   build:
-    name: Lint, test & build APKs
+    name: Lint, test & build
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
@@ -60,13 +60,25 @@ jobs:
           BEDDERY_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           BEDDERY_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           BEDDERY_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew lintDebug testDebugUnitTest assembleDebug assembleRelease
+        # github = the self-updating APK for GitHub Releases; play = the bundle for Google Play.
+        run: >-
+          ./gradlew lintGithubDebug lintPlayRelease testGithubDebugUnitTest
+          assembleGithubDebug assembleGithubRelease bundlePlayRelease
 
       - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
           name: beddery-${{ env.VERSION_NAME }}
           path: app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
+
+      # Upload this to Play Console by hand (or automate it later). It's kept out of the
+      # GitHub release, whose download pattern only matches beddery-* artifacts.
+      - name: Upload Play bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: play-bundle-${{ env.VERSION_NAME }}
+          path: app/build/outputs/bundle/playRelease/*.aab
           if-no-files-found: error
 
       - name: Upload screenshots

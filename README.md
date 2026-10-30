@@ -67,12 +67,18 @@ Either way, "Double-tap to close" stops a single bump from closing Beddery at ni
 
 ## Building
 
-Requirements: JDK 17 and the Android SDK (API 35).
+Requirements: JDK 17 and the Android SDK (API 36).
+
+Beddery comes in two versions built from the same code:
+
+- **play**: for Google Play. Play delivers updates, so this version has no updater and no install permission.
+- **github**: the APK on GitHub Releases. It checks GitHub for new versions and installs them itself.
 
 ```bash
-./gradlew assembleDebug          # app/build/outputs/apk/debug/
-./gradlew testDebugUnitTest      # unit + Robolectric render tests
-./gradlew lintDebug
+./gradlew assembleGithubDebug        # app/build/outputs/apk/github/debug/
+./gradlew bundlePlayRelease          # app/build/outputs/bundle/playRelease/ (upload to Play Console)
+./gradlew testGithubDebugUnitTest    # unit + Robolectric render tests
+./gradlew lintGithubDebug lintPlayRelease
 ```
 
 The render tests draw every screensaver in both orientations and save PNGs to `app/build/screenshots/`,
@@ -80,10 +86,10 @@ which makes visual review easy.
 
 ## CI
 
-`.github/workflows/build.yml` runs lint and the tests, then builds debug + release APKs on every push and PR.
-APKs (and screenshots) are attached to each run as artifacts.
+`.github/workflows/build.yml` runs lint and the tests, then builds the GitHub APKs and the Play bundle on every
+push and PR. APKs, the Play bundle (`play-bundle-<version>`) and screenshots are attached to each run as artifacts.
 
-Every push to `main` also publishes a GitHub Release (`v1.0.<run number>`) with the release APK, so the
+Every push to `main` also publishes a GitHub Release (`v1.0.<run number>`) with the GitHub release APK, so the
 latest build is always at **Releases → Latest**. Pull requests only build. You can still push a tag like
 `v2.0.0` to release with a specific version.
 
@@ -107,6 +113,8 @@ keytool -genkeypair -v -keystore release.jks -keyalg RSA -keysize 4096 -validity
 ```
 
 ## Privacy
+
+The full policy is in [`docs/privacy.html`](docs/privacy.html), published with GitHub Pages.
 
 - Weather comes from [Open-Meteo](https://open-meteo.com) (no account, no tracking). Only the
   coordinates you choose are sent.

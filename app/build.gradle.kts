@@ -13,18 +13,31 @@ val releaseKeystore = System.getenv("BEDDERY_KEYSTORE")?.let { file(it) }?.takeI
 
 android {
     namespace = "dev.pridgey.beddery"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "dev.pridgey.beddery"
         minSdk = 28
-        targetSdk = 35
+        targetSdk = 36
         versionCode = ciVersionCode
         versionName = ciVersionName
         resValue("string", "dream_settings_component", "dev.pridgey.beddery/dev.pridgey.beddery.MainActivity")
-        // Where the app looks for updates. A read-only token is only needed while the repo is private.
-        buildConfigField("String", "UPDATE_REPO", "\"${System.getenv("UPDATE_REPO") ?: "pridgey/Beddery-"}\"")
-        buildConfigField("String", "UPDATE_TOKEN", "\"${System.getenv("UPDATE_TOKEN") ?: ""}\"")
+    }
+
+    // Two ways to ship the same app:
+    //  - play: for Google Play, which delivers updates itself. No updater, no install permission.
+    //  - github: the APK on GitHub Releases, which checks for and installs its own updates.
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("play") {
+            dimension = "distribution"
+        }
+        create("github") {
+            dimension = "distribution"
+            // Where the app looks for updates. A read-only token is only needed while the repo is private.
+            buildConfigField("String", "UPDATE_REPO", "\"${System.getenv("UPDATE_REPO") ?: "pridgey/Beddery-"}\"")
+            buildConfigField("String", "UPDATE_TOKEN", "\"${System.getenv("UPDATE_TOKEN") ?: ""}\"")
+        }
     }
 
     signingConfigs {

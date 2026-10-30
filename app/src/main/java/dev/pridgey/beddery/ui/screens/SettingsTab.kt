@@ -12,6 +12,10 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.material3.RadioButton
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -77,6 +81,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -148,6 +153,25 @@ fun SwitchRow(title: String, checked: Boolean, subtitle: String? = null, onChang
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun <T> Choice(options: List<T>, selected: T, label: @Composable (T) -> String, modifier: Modifier = Modifier, onSelect: (T) -> Unit) {
+    // Segments can't fit large text on a phone, so list the options with radio buttons instead.
+    if (LocalDensity.current.fontScale >= LARGE_TEXT) {
+        Column(modifier.selectableGroup()) {
+            options.forEach { option ->
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .selectable(selected = option == selected, role = Role.RadioButton) { onSelect(option) }
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    RadioButton(selected = option == selected, onClick = null)
+                    Spacer(Modifier.width(12.dp))
+                    Text(label(option))
+                }
+            }
+        }
+        return
+    }
     SingleChoiceSegmentedButtonRow(modifier.fillMaxWidth()) {
         options.forEachIndexed { i, option ->
             SegmentedButton(
@@ -163,6 +187,7 @@ fun <T> Choice(options: List<T>, selected: T, label: @Composable (T) -> String, 
 // ---------------------------------------------------------------- Display
 
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 private fun LookSection(settings: AppSettings, viewModel: MainViewModel) {
     SectionHeader(stringResource(R.string.section_look))
     SettingsGroup {
@@ -189,7 +214,7 @@ private fun LookSection(settings: AppSettings, viewModel: MainViewModel) {
             colors = itemColors,
             headlineContent = { Text(stringResource(R.string.accent_color)) },
             supportingContent = {
-                Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                FlowRow(Modifier.padding(top = 4.dp)) {
                     Accent.entries.forEach { a -> AccentSwatch(a, a == settings.accent) { viewModel.update { it.copy(accent = a) } } }
                 }
             },
@@ -227,7 +252,9 @@ private fun WhileShowingSection(settings: AppSettings, viewModel: MainViewModel)
             viewModel.update { it.copy(burnInProtection = v) }
         }
         // Android decides the screensaver's orientation; Standby can choose.
-        if (settings.standbyEnabled) {
+        // Android 16 ignores orientation locks on tablets and unfolded foldables, so only offer it on phones.
+        val canLockOrientation = LocalConfiguration.current.smallestScreenWidthDp < 600
+        if (settings.standbyEnabled && canLockOrientation) {
             ListItem(
                 colors = itemColors,
                 headlineContent = { Text(stringResource(R.string.standby_orientation)) },
@@ -252,20 +279,28 @@ private fun WhileShowingSection(settings: AppSettings, viewModel: MainViewModel)
     }
 }
 
+/** Font scale at which side-by-side controls stop fitting on a phone. */
+const val LARGE_TEXT = 1.5f
+
 @Composable
 private fun AccentSwatch(accent: Accent, selected: Boolean, onClick: () -> Unit) {
     val name = accent.name.lowercase().replaceFirstChar { it.uppercase() }
     Box(
         Modifier
-            .size(36.dp)
-            .clip(CircleShape)
-            .background(Color(accent.argb))
-            .then(if (selected) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape) else Modifier)
             .clickable(role = Role.RadioButton, onClick = onClick)
             .semantics {
                 contentDescription = name
                 this.selected = selected
-            },
+            }
+            .size(48.dp)
+            .padding(6.dp)
+            .clip(CircleShape)
+            .background(Color(accent.argb))
+            .border(
+                if (selected) 3.dp else 1.dp,
+                if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outlineVariant,
+                CircleShape,
+            ),
         contentAlignment = Alignment.Center,
     ) {
         if (selected) Icon(Icons.Rounded.Check, null, tint = Color.Black.copy(alpha = 0.7f), modifier = Modifier.size(18.dp))
@@ -543,6 +578,23 @@ private fun AboutSection() {
             supportingContent = { Text(stringResource(R.string.about_version, BuildConfig.VERSION_NAME)) },
         )
         UpdateRow()
+        val context = LocalContext.current
+        val privacyUrl = stringResource(R.string.privacy_policy_url)
+        ListItem(
+            colors = itemColors,
+            modifier = Modifier.clickable {
+                runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(privacyUrl))) }
+            },
+            headlineContent = { Text(stringResource(R.string.about_privacy)) },
+            supportingContent = { Text(stringResource(R.string.about_privacy_summary)) },
+        )
+        var showLicenses by rememberSaveable { mutableStateOf(false) }
+        ListItem(
+            colors = itemColors,
+            modifier = Modifier.clickable { showLicenses = true },
+            headlineContent = { Text(stringResource(R.string.about_licenses)) },
+        )
+        if (showLicenses) LicensesDialog(onDismiss = { showLicenses = false })
         Text(
             stringResource(R.string.about_weather_credit),
             style = MaterialTheme.typography.bodySmall,
@@ -551,4 +603,29 @@ private fun AboutSection() {
         )
     }
     Spacer(Modifier.height(8.dp))
+}
+
+/** The licenses for the fonts Beddery ships, read from assets/licenses. */
+@Composable
+private fun LicensesDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val licenses = remember {
+        val dir = "licenses"
+        context.assets.list(dir).orEmpty().sorted().map { file ->
+            file.substringBefore('-') to context.assets.open("$dir/$file").bufferedReader().use { it.readText() }
+        }
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_done)) } },
+        title = { Text(stringResource(R.string.about_licenses)) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                licenses.forEach { (name, text) ->
+                    Text(name, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 12.dp, bottom = 4.dp))
+                    Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        },
+    )
 }
