@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
@@ -51,7 +52,7 @@ class DeviceSizesTest {
         compose.mainClock.autoAdvance = false
         compose.mainClock.advanceTimeBy(2_000)
         snapshot("${prefix}_gallery")
-        compose.onAllNodesWithText("Settings").onFirst().performClick()
+        compose.onAllNodesWithContentDescription("Settings").onFirst().performClick()
         compose.mainClock.advanceTimeBy(1_500)
         snapshot("${prefix}_settings")
         // Settings items: 0 how it starts, 1 what's shown, 2 look, 3 while showing, 4 notifications, 5 night.
@@ -91,7 +92,7 @@ class DeviceSizesTest {
         ShadowBuild.setBrand("Redmi")
         compose.mainClock.autoAdvance = false
         compose.mainClock.advanceTimeBy(1_000)
-        compose.onAllNodesWithText("Settings").onFirst().performClick()
+        compose.onAllNodesWithContentDescription("Settings").onFirst().performClick()
         compose.mainClock.advanceTimeBy(1_000)
         compose.onAllNodesWithText("Starts the moment you plug in. Works on every phone.").onFirst().performClick()
         // Settings are saved off the main thread: let real time pass until the checklist shows.

@@ -68,6 +68,11 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
@@ -103,8 +108,26 @@ import dev.pridgey.beddery.system.LaunchStatus
 import java.time.LocalTime
 import kotlin.math.roundToInt
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsTab(settings: AppSettings, viewModel: MainViewModel, padding: PaddingValues, onOpenGallery: () -> Unit = {}) {
+fun SettingsScreen(settings: AppSettings, viewModel: MainViewModel, onBack: () -> Unit) {
+    val scroll = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    Scaffold(
+        modifier = Modifier.nestedScroll(scroll.nestedScrollConnection),
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.tab_settings)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.action_back)) }
+                },
+                scrollBehavior = scroll,
+            )
+        },
+    ) { padding -> SettingsTab(settings, viewModel, padding, onOpenGallery = onBack) }
+}
+
+@Composable
+private fun SettingsTab(settings: AppSettings, viewModel: MainViewModel, padding: PaddingValues, onOpenGallery: () -> Unit) {
     LazyColumn(contentPadding = padding + PaddingValues(bottom = 24.dp)) {
         item { LaunchSection(settings, viewModel) }
         item { ShownSection(settings, viewModel, onOpenGallery) }

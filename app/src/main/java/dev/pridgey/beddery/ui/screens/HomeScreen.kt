@@ -3,10 +3,6 @@ package dev.pridgey.beddery.ui.screens
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import android.app.ActivityManager
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -31,7 +27,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.AutoAwesomeMosaic
 import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
@@ -41,7 +36,7 @@ import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.NightsStay
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Shuffle
-import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -50,8 +45,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -62,7 +55,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -100,16 +92,16 @@ private const val STILL_SETTLE_MS = 450L
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(settings: AppSettings, viewModel: MainViewModel, onOpenSaver: (String) -> Unit) {
-    var tab by rememberSaveable { mutableIntStateOf(0) }
+fun HomeScreen(settings: AppSettings, viewModel: MainViewModel, onOpenSaver: (String) -> Unit, onOpenSettings: () -> Unit) {
     val context = LocalContext.current
     LaunchedEffect(Unit) { checkForUpdatesIfDue(context) }
     val scroll = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
         modifier = Modifier.nestedScroll(scroll.nestedScrollConnection),
         topBar = {
+            // No title: the screensavers speak for themselves. Just the two things you reach for.
             TopAppBar(
-                title = { Text(stringResource(if (tab == 0) R.string.app_name else R.string.tab_settings)) },
+                title = {},
                 actions = {
                     IconButton(onClick = {
                         if (!settings.previewTipSeen) viewModel.update { it.copy(previewTipSeen = true) }
@@ -117,32 +109,15 @@ fun HomeScreen(settings: AppSettings, viewModel: MainViewModel, onOpenSaver: (St
                     }) {
                         Icon(Icons.Rounded.PlayArrow, contentDescription = stringResource(R.string.action_preview))
                     }
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(Icons.Rounded.Settings, contentDescription = stringResource(R.string.tab_settings))
+                    }
                 },
                 scrollBehavior = scroll,
             )
         },
-        bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    selected = tab == 0, onClick = { tab = 0 },
-                    icon = { Icon(Icons.Rounded.AutoAwesomeMosaic, null) },
-                    label = { Text(stringResource(R.string.tab_screensavers)) },
-                )
-                NavigationBarItem(
-                    selected = tab == 1, onClick = { tab = 1 },
-                    icon = { Icon(Icons.Rounded.Tune, null) },
-                    label = { Text(stringResource(R.string.tab_settings)) },
-                )
-            }
-        },
     ) { padding ->
-        AnimatedContent(tab, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "tab") { t ->
-            if (t == 0) {
-                GalleryTab(settings, viewModel, onOpenSaver, padding, onSetup = { tab = 1 })
-            } else {
-                SettingsTab(settings, viewModel, padding, onOpenGallery = { tab = 0 })
-            }
-        }
+        GalleryTab(settings, viewModel, onOpenSaver, padding, onSetup = onOpenSettings)
     }
 }
 

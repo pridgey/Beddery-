@@ -3,6 +3,7 @@ package dev.pridgey.beddery
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onLast
@@ -89,7 +90,7 @@ class AppScreensTest {
         compose.activity.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
         compose.mainClock.advanceTimeBy(1_500)
 
-        compose.onAllNodesWithText("Settings").onFirst().performClick()
+        compose.onAllNodesWithContentDescription("Settings").onFirst().performClick()
         compose.mainClock.advanceTimeBy(1_500)
         compose.onNodeWithText("How Beddery starts").assertExists()
         snapshot("settings")

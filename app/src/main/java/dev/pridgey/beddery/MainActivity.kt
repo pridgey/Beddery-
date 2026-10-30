@@ -21,6 +21,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import dev.pridgey.beddery.ui.screens.HomeScreen
+import dev.pridgey.beddery.ui.screens.SettingsScreen
 import dev.pridgey.beddery.ui.screens.SaverDetailScreen
 import dev.pridgey.beddery.ui.theme.BedderyTheme
 
@@ -51,7 +52,11 @@ class MainActivity : ComponentActivity() {
                                     settings = s,
                                     viewModel = viewModel,
                                     onOpenSaver = { id -> nav.navigate("saver/$id") },
+                                    onOpenSettings = { nav.navigate("settings") },
                                 )
+                            }
+                            composable("settings") {
+                                SettingsScreen(settings = s, viewModel = viewModel, onBack = { nav.popBackStack() })
                             }
                             composable("saver/{id}") { entry ->
                                 SaverDetailScreen(
