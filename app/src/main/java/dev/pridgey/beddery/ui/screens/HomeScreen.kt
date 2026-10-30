@@ -143,8 +143,14 @@ private fun GalleryTab(
 ) {
     var filter by rememberSaveable { mutableStateOf<SaverCategory?>(null) }
     var refinedOnly by rememberSaveable { mutableStateOf(false) }
+    var shuffleOnly by rememberSaveable { mutableStateOf(false) }
+    // With nothing marked, shuffle uses every screensaver, so the filter would show them all.
+    val hasShuffleList = settings.shuffleIds.isNotEmpty()
     val previewContext = rememberSaverContext(settings, preview = true)
-    val savers = Savers.all.filter { (filter == null || it.category == filter) && (!refinedOnly || it.refined) }
+    val savers = Savers.all.filter {
+        (filter == null || it.category == filter) && (!refinedOnly || it.refined) &&
+            (!shuffleOnly || !hasShuffleList || it.id in settings.shuffleIds)
+    }
     val showUpdate = rememberUpdateBannerVisible()
     val grid = rememberLazyGridState()
     val context = LocalContext.current
@@ -183,10 +189,18 @@ private fun GalleryTab(
             item(span = { GridItemSpan(maxLineSpan) }, key = "filters") {
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
-                        selected = filter == null && !refinedOnly,
-                        onClick = { filter = null; refinedOnly = false },
+                        selected = filter == null && !refinedOnly && !(shuffleOnly && hasShuffleList),
+                        onClick = { filter = null; refinedOnly = false; shuffleOnly = false },
                         label = { Text(stringResource(R.string.category_all)) },
                     )
+                    if (hasShuffleList) {
+                        FilterChip(
+                            selected = shuffleOnly,
+                            onClick = { shuffleOnly = !shuffleOnly },
+                            leadingIcon = { Icon(Icons.Rounded.Shuffle, null, Modifier.size(18.dp)) },
+                            label = { Text(stringResource(R.string.state_in_shuffle)) },
+                        )
+                    }
                     SaverCategory.entries.forEach { c ->
                         FilterChip(
                             selected = filter == c,
