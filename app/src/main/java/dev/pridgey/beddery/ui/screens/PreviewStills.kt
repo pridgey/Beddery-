@@ -31,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,6 +45,7 @@ import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -204,7 +206,10 @@ fun SaverStill(
     val fresh = exact != null && exact.minute == minute
     val dir = LocalContext.current.cacheDir
     if (still == null) LaunchedEffect(key) { StillCache.load(dir, key, base) }
-    if (!fresh) {
+    // The list builds cards just off-screen ahead of time without drawing them. Only queue a card
+    // once it's laid out, or its turn is spent waiting for a frame that never comes.
+    var placed by remember { mutableStateOf(false) }
+    if (!fresh && placed) {
         DisposableEffect(key, minute) {
             scheduler.request(key, missing = still == null)
             onDispose { scheduler.release(key) }
@@ -214,6 +219,7 @@ fun SaverStill(
     BoxWithConstraints(
         modifier
             .aspectRatio(vw / vh)
+            .onPlaced { placed = true }
             .clip(RoundedCornerShape(corner))
             .background(Color.Black)
             .clearAndSetSemantics { },
@@ -256,6 +262,12 @@ fun SaverStill(
                 // The picture needs at least one drawn frame.
                 var waits = 0
                 while (layer.size == IntSize.Zero && waits++ < 20) delay(100)
+                if (layer.size == IntSize.Zero) {
+                    // Never drawn (scrolled away mid-render): try again later rather than giving up on it.
+                    scheduler.release(key)
+                    scheduler.request(key, missing = still == null)
+                    return@LaunchedEffect
+                }
                 runCatching { shrink(layer.toImageBitmap()) }.onFailure {
                     // Fall back to a live thumbnail for this one.
                     Log.w("Beddery", "Couldn't take a thumbnail of ${saver.id}", it)
