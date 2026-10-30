@@ -69,6 +69,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
@@ -104,15 +111,6 @@ fun HomeScreen(settings: AppSettings, viewModel: MainViewModel, onOpenSaver: (St
             TopAppBar(
                 title = { Text(stringResource(if (tab == 0) R.string.app_name else R.string.tab_settings)) },
                 actions = {
-                    if (tab == 0) {
-                        val dense = settings.galleryDense
-                        IconButton(onClick = { viewModel.update { it.copy(galleryDense = !dense) } }) {
-                            Icon(
-                                if (dense) Icons.Rounded.GridView else Icons.Rounded.ViewModule,
-                                contentDescription = stringResource(if (dense) R.string.action_cards_larger else R.string.action_cards_smaller),
-                            )
-                        }
-                    }
                     IconButton(onClick = {
                         if (!settings.previewTipSeen) viewModel.update { it.copy(previewTipSeen = true) }
                         context.startActivity(StandbyActivity.intent(context, preview = true))
@@ -199,16 +197,24 @@ private fun GalleryTab(
         ) {
             if (!settings.onboardingDone) {
                 item(span = { GridItemSpan(maxLineSpan) }, key = "setup") {
-                    SetupCard(onSetup = onSetup, onDismiss = { viewModel.update { it.copy(onboardingDone = true) } })
+                    SetupCard(pickLabel(settings, ready).takeIf { !ready }, onSetup = onSetup, onDismiss = { viewModel.update { it.copy(onboardingDone = true) } })
                 }
             } else if (!ready) {
                 // The big card is gone, but Beddery still won't start on its own: keep a small reminder.
-                item(span = { GridItemSpan(maxLineSpan) }, key = "finish") { FinishSetupRow(stepsLeft, onSetup) }
+                item(span = { GridItemSpan(maxLineSpan) }, key = "finish") { FinishSetupRow(stepsLeft, pickLabel(settings, ready), onSetup) }
             }
             if (showUpdate) item(span = { GridItemSpan(maxLineSpan) }, key = "update") { UpdateBanner() }
-            item(span = { GridItemSpan(maxLineSpan) }, key = "now") { NowShowing(settings, ready) }
+            // Until setup is done, what's picked is said in the setup card instead.
+            if (ready || settings.nightSaverId != null) {
+                item(span = { GridItemSpan(maxLineSpan) }, key = "now") { NowShowing(settings, showPick = ready) }
+            }
             item(span = { GridItemSpan(maxLineSpan) }, key = "filters") {
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Chips scroll; the card-size toggle stays pinned at the end.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    Modifier.weight(1f).fadeEnd(24.dp).horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     FilterChip(
                         selected = filter == null && !refinedOnly && !(shuffleOnly && hasShuffleList),
                         onClick = { filter = null; refinedOnly = false; shuffleOnly = false },
@@ -236,6 +242,14 @@ private fun GalleryTab(
                         label = { Text(stringResource(R.string.category_refined)) },
                     )
                 }
+                IconButton(onClick = { viewModel.update { it.copy(galleryDense = !dense) } }) {
+                    Icon(
+                        if (dense) Icons.Rounded.GridView else Icons.Rounded.ViewModule,
+                        contentDescription = stringResource(if (dense) R.string.action_cards_larger else R.string.action_cards_smaller),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                }
             }
             items(savers, key = { it.id }) { saver ->
                 SaverCard(saver, settings, previewContext, dense, onClick = { onOpenSaver(saver.id) })
@@ -245,7 +259,7 @@ private fun GalleryTab(
 }
 
 @Composable
-private fun SetupCard(onSetup: () -> Unit, onDismiss: () -> Unit) {
+private fun SetupCard(pick: String?, onSetup: () -> Unit, onDismiss: () -> Unit) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
         shape = RoundedCornerShape(24.dp),
@@ -264,6 +278,13 @@ private fun SetupCard(onSetup: () -> Unit, onDismiss: () -> Unit) {
                 stringResource(R.string.setup_body), style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.padding(end = 12.dp),
             )
+            if (pick != null) {
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    pick, style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f), modifier = Modifier.padding(end = 12.dp),
+                )
+            }
             Spacer(Modifier.height(12.dp))
             FilledTonalButton(onClick = onSetup) { Text(stringResource(R.string.setup_action)) }
         }
@@ -271,7 +292,7 @@ private fun SetupCard(onSetup: () -> Unit, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun FinishSetupRow(stepsLeft: Int?, onSetup: () -> Unit) {
+private fun FinishSetupRow(stepsLeft: Int?, pick: String, onSetup: () -> Unit) {
     Card(
         onClick = onSetup,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
@@ -290,34 +311,42 @@ private fun FinishSetupRow(stepsLeft: Int?, onSetup: () -> Unit) {
                     else pluralStringResource(R.plurals.setup_status_steps, stepsLeft, stepsLeft),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
+                Text(
+                    pick, style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f), modifier = Modifier.padding(top = 2.dp),
+                )
             }
             Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onTertiaryContainer)
         }
     }
 }
 
-/** What will show while charging. Until setup is finished it only says what's picked, not that it's showing. */
+/** What's picked. Until setup is finished it doesn't claim it's showing while charging. */
 @Composable
-private fun NowShowing(settings: AppSettings, ready: Boolean) {
-    val label = if (settings.shuffleEnabled) {
+private fun pickLabel(settings: AppSettings, ready: Boolean): String =
+    if (settings.shuffleEnabled) {
         val count = settings.shuffleIds.count { Savers.findOrNull(it) != null }.takeIf { it > 0 } ?: Savers.all.size
         if (settings.shuffleMode == ShuffleMode.ON_START) pluralStringResource(R.plurals.now_shuffling_start, count, count)
         else pluralStringResource(R.plurals.now_shuffling, count, count, settings.shuffleMinutes)
     } else {
         stringResource(if (ready) R.string.now_showing else R.string.now_picked, saverName(Savers.find(settings.selectedSaverId)))
     }
+
+/** What shows while charging, and the night pick if there is one. [showPick] is false until setup is finished. */
+@Composable
+private fun NowShowing(settings: AppSettings, showPick: Boolean) {
     Column {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        if (showPick) Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 if (settings.shuffleEnabled) Icons.Rounded.Shuffle else Icons.Rounded.Check, null,
                 tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp),
             )
             Spacer(Modifier.width(8.dp))
-            Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(pickLabel(settings, true), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         val night = settings.nightSaverId?.let { Savers.findOrNull(it) }
         if (night != null) {
-            Spacer(Modifier.height(4.dp))
+            if (showPick) Spacer(Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.Bedtime, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
@@ -390,3 +419,14 @@ fun saverName(saver: Saver): String {
     val title = stringResource(saver.title)
     return if (saver.refined) stringResource(R.string.saver_refined_name, title) else title
 }
+
+/** Fades the last [width] of the content to transparent, so a scrolling row doesn't end in a hard cut. */
+private fun Modifier.fadeEnd(width: Dp) = graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+    .drawWithContent {
+        drawContent()
+        val w = width.toPx()
+        drawRect(
+            Brush.horizontalGradient(listOf(Color.Black, Color.Transparent), startX = size.width - w, endX = size.width),
+            blendMode = BlendMode.DstIn,
+        )
+    }
