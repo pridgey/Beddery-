@@ -33,9 +33,10 @@
     <!-- Gallery -->
     <string name="category_all">All</string>
     <string name="category_clocks">Clocks</string>
+    <string name="category_sleep">Sleep</string>
     <string name="category_info">Info</string>
-    <string name="category_relax">Relax</string>
-    <string name="category_ambient">Ambient</string>
+    <string name="category_scenes">Scenes</string>
+    <string name="category_abstract">Abstract</string>
     <string name="now_showing">Showing %1$s while charging</string>
     <plurals name="now_shuffling">
         <item quantity="one">Shuffling %1$d screensaver every %2$d min</item>

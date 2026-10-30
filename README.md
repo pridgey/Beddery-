@@ -5,28 +5,28 @@ phone is charging and locked: a clock, the weather, your agenda, or something ca
 
 ## Screensavers
 
-68 screensavers in four groups. Every one works in portrait and landscape, and the gallery shows live previews.
+69 screensavers in five groups. Every one works in portrait and landscape.
 
-| Clocks | Info | Relax | Ambient |
-| --- | --- | --- | --- |
-| Minimal | Charge Vial | Breathe (+ Refined) | Starfield |
-| Analog | Fill Up | Box Breathing | Orbits |
-| Flip Clock | Power Flow | Tide | Constellation |
-| Bedside Classic (red LED) | Charge Garden | Wind Down | Plexus |
-| Nixie | Power Cells | Count Down | The Orb |
-| Odometer | Charging | Moonlit Ocean | Jellyfish |
-| Big Type | Weather | Aurora | Color Field |
-| Rings | Weather Window | Lava Lamp | Contours |
-| Day Arc (sun path) | Agenda (calendar) | Fireflies | Ridgelines |
-| Sunrise Alarm (dawn before your alarm) | Notifications | Rain on Glass | Flow Field |
-| Hourglass | Sleep | Campfire | Harmonograph |
-| Word Clock | Sleep Coach | Candle | Pendulum Wave |
-| Nightlight (dim red) | Moon Phase | Snowfall | Digital Rain |
-| Binary | Sky Tonight (real stars and planets) | Koi Pond | Game of Life |
-| Bouncing Clock | Month | Lighthouse |  |
-| Block Clock | Progress | Sleeper Train |  |
-| Tiny Room (pixel art) | World Clock | Sleeping Cat |  |
-| Three Hourglasses (day, hour, minute) | Photo Frame | Aquarium |  |
+| Clocks | Sleep | Info | Scenes | Abstract |
+| --- | --- | --- | --- | --- |
+| Minimal | Sleep | Weather | Moonlit Ocean | Starfield |
+| Analog | Sunrise Alarm (dawn before your alarm) | Weather Window | Aurora | Orbits |
+| Nightlight (dim red) | Sleep Coach | Agenda (calendar) | Campfire | Constellation |
+| Bedside Classic (red LED) | Breathe (+ Refined) | Month | Rain on Glass | Plexus |
+| Big Type | Box Breathing | Notifications | Snowfall | Flow Field |
+| Flip Clock | Tide | Now Playing | Sleeping Cat | Color Field |
+| Rings | Wind Down | Moon Phase | Koi Pond | Contours |
+| Word Clock | Count Down | Sky Tonight (real stars and planets) | Lighthouse | Ridgelines |
+| World Clock |  | Progress | Sleeper Train | Harmonograph |
+| Nixie |  | Photo Frame | Aquarium | Pendulum Wave |
+| Odometer |  | Charging | Candle | Lava Lamp |
+| Binary |  | Charge Vial | Fireflies | Digital Rain |
+| Block Clock |  | Fill Up | Jellyfish | Game of Life |
+| Bouncing Clock |  | Power Cells | The Orb |  |
+| Day Arc (sun path) |  | Power Flow |  |  |
+| Tiny Room (pixel art) |  | Charge Garden |  |  |
+| Hourglass |  |  |  |  |
+| Three Hourglasses (day, hour, minute) |  |  |  |  |
 
 Breathe also comes in a **Refined** version; swipe between the two in full-screen preview to compare.
 

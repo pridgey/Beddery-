@@ -144,11 +144,13 @@ import dev.pridgey.beddery.savers.impl.WeatherSaver
 import dev.pridgey.beddery.savers.impl.WordClockSaver
 import dev.pridgey.beddery.savers.impl.WorldClockSaver
 
+/** Gallery groups, in the order their filter chips appear. */
 enum class SaverCategory(@StringRes val label: Int) {
     CLOCKS(R.string.category_clocks),
+    SLEEP(R.string.category_sleep),
     INFO(R.string.category_info),
-    RELAX(R.string.category_relax),
-    AMBIENT(R.string.category_ambient),
+    SCENES(R.string.category_scenes),
+    ABSTRACT(R.string.category_abstract),
 }
 
 @Immutable
@@ -178,88 +180,91 @@ class Saver(
 
 object Savers {
     private val C = SaverCategory.CLOCKS
+    private val S = SaverCategory.SLEEP
     private val I = SaverCategory.INFO
-    private val R_ = SaverCategory.RELAX
-    private val A = SaverCategory.AMBIENT
+    private val SC = SaverCategory.SCENES
+    private val AB = SaverCategory.ABSTRACT
 
     val all: List<Saver> = listOf(
-        // Clocks
+        // Clocks: easy to read first, then retro and playful, then scenes
         Saver("minimal", R.string.saver_minimal, R.string.saver_minimal_desc, C, Icons.Rounded.Schedule, true, showsNotifications = true) { MinimalClockSaver(it) },
         Saver("analog", R.string.saver_analog, R.string.saver_analog_desc, C, Icons.Rounded.Timer, true, showsNotifications = true) { AnalogClockSaver(it) },
-        Saver("flip", R.string.saver_flip, R.string.saver_flip_desc, C, Icons.Rounded.Tv, true, showsNotifications = true) { FlipClockSaver(it) },
+        Saver("nightlight", R.string.saver_nightlight, R.string.saver_nightlight_desc, C, Icons.Rounded.Bedtime, true) { NightlightSaver(it) },
         Saver("classic", R.string.saver_classic, R.string.saver_classic_desc, C, Icons.Rounded.Alarm, true) { BedsideClassicSaver(it) },
+        Saver("bigtype", R.string.saver_bigtype, R.string.saver_bigtype_desc, C, Icons.Rounded.FormatSize, true, showsNotifications = true) { BigTypeSaver(it) },
+        Saver("flip", R.string.saver_flip, R.string.saver_flip_desc, C, Icons.Rounded.Tv, true, showsNotifications = true) { FlipClockSaver(it) },
+        Saver("rings", R.string.saver_rings, R.string.saver_rings_desc, C, Icons.Rounded.DonutLarge, true) { RingsClockSaver(it) },
+        Saver("word", R.string.saver_word, R.string.saver_word_desc, C, Icons.Rounded.TextFields, true) { WordClockSaver(it) },
+        Saver("world", R.string.saver_world, R.string.saver_world_desc, C, Icons.Rounded.Public, true, configurable = true, showsNotifications = true) { WorldClockSaver(it) },
         Saver("nixie", R.string.saver_nixie, R.string.saver_nixie_desc, C, Icons.Rounded.Lightbulb, true, showsNotifications = true) { NixieSaver(it) },
         Saver("odometer", R.string.saver_odometer, R.string.saver_odometer_desc, C, Icons.Rounded.Speed, true, configurable = true, showsNotifications = true) { OdometerSaver(it) },
-        Saver("bigtype", R.string.saver_bigtype, R.string.saver_bigtype_desc, C, Icons.Rounded.FormatSize, true, showsNotifications = true) { BigTypeSaver(it) },
-        Saver("rings", R.string.saver_rings, R.string.saver_rings_desc, C, Icons.Rounded.DonutLarge, true) { RingsClockSaver(it) },
+        Saver("binary", R.string.saver_binary, R.string.saver_binary_desc, C, Icons.Rounded.Memory, true, showsNotifications = true) { BinaryClockSaver(it) },
+        Saver("blocks", R.string.saver_blocks, R.string.saver_blocks_desc, C, Icons.Rounded.Widgets, true) { BlockClockSaver(it) },
+        Saver("bounce", R.string.saver_bounce, R.string.saver_bounce_desc, C, Icons.AutoMirrored.Rounded.ShowChart, true) { BouncingClockSaver(it) },
         Saver("dayarc", R.string.saver_dayarc, R.string.saver_dayarc_desc, C, Icons.Rounded.WbSunny, false) { SceneDayArcSaver(it) },
-        Saver("sunrise", R.string.saver_sunrise, R.string.saver_sunrise_desc, C, Icons.Rounded.LightMode, true) { SunriseSaver(it) },
+        Saver("tinyroom", R.string.saver_tinyroom, R.string.saver_tinyroom_desc, C, Icons.Rounded.Bed, true) { TinyRoomSaver(it) },
         Saver("hourglass", R.string.saver_hourglass, R.string.saver_hourglass_desc, C, Icons.Rounded.HourglassBottom, false) { SceneHourglassSaver(it) },
         Saver("hourglasses", R.string.saver_hourglasses, R.string.saver_hourglasses_desc, C, Icons.Rounded.HourglassBottom, false) { SceneThreeHourglassesSaver(it) },
-        Saver("word", R.string.saver_word, R.string.saver_word_desc, C, Icons.Rounded.TextFields, true) { WordClockSaver(it) },
-        Saver("nightlight", R.string.saver_nightlight, R.string.saver_nightlight_desc, C, Icons.Rounded.Bedtime, true) { NightlightSaver(it) },
-        Saver("binary", R.string.saver_binary, R.string.saver_binary_desc, C, Icons.Rounded.Memory, true, showsNotifications = true) { BinaryClockSaver(it) },
-        Saver("bounce", R.string.saver_bounce, R.string.saver_bounce_desc, C, Icons.AutoMirrored.Rounded.ShowChart, true) { BouncingClockSaver(it) },
-        Saver("blocks", R.string.saver_blocks, R.string.saver_blocks_desc, C, Icons.Rounded.Widgets, true) { BlockClockSaver(it) },
-        Saver("tinyroom", R.string.saver_tinyroom, R.string.saver_tinyroom_desc, C, Icons.Rounded.Bed, true) { TinyRoomSaver(it) },
 
-        // Info
-        Saver("battery_vial", R.string.saver_battery_vial, R.string.saver_battery_vial_desc, I, Icons.Rounded.Science, true) { ChargeVialSaver(it) },
-        Saver("battery_fill", R.string.saver_battery_fill, R.string.saver_battery_fill_desc, I, Icons.Rounded.Percent, true) { BigFillSaver(it) },
-        Saver("battery_flow", R.string.saver_battery_flow, R.string.saver_battery_flow_desc, I, Icons.Rounded.ElectricBolt, true) { PowerFlowSaver(it) },
-        Saver("battery_garden", R.string.saver_battery_garden, R.string.saver_battery_garden_desc, I, Icons.Rounded.LocalFlorist, true) { ChargeGardenSaver(it) },
-        Saver("battery_cells", R.string.saver_battery_cells, R.string.saver_battery_cells_desc, I, Icons.Rounded.Battery5Bar, true) { PowerCellsSaver(it) },
-        Saver("charging", R.string.saver_charging, R.string.saver_charging_desc, I, Icons.Rounded.BatteryChargingFull, true, showsNotifications = true) { ChargingSaver(it) },
+        // Sleep: falling asleep and waking up
+        Saver("sleep", R.string.saver_sleep, R.string.saver_sleep_desc, S, Icons.Rounded.Hotel, true, showsNotifications = true) { SleepSaver(it) },
+        Saver("sunrise", R.string.saver_sunrise, R.string.saver_sunrise_desc, S, Icons.Rounded.LightMode, true) { SunriseSaver(it) },
+        Saver("sleepcoach", R.string.saver_sleepcoach, R.string.saver_sleepcoach_desc, S, Icons.Rounded.EmojiEmotions, true) { SleepCoachSaver(it) },
+        Saver("breathe", R.string.saver_breathe, R.string.saver_breathe_desc, S, Icons.Rounded.Air, false, configurable = true) { BreatheSaver(it) },
+        Saver("breathe_refined", R.string.saver_breathe, R.string.saver_breathe_refined_desc, S, Icons.Rounded.Air, false, configurable = true, variantOf = "breathe") { BreatheRefinedSaver(it) },
+        Saver("boxbreath", R.string.saver_boxbreath, R.string.saver_boxbreath_desc, S, Icons.Rounded.CropSquare, false) { BoxBreathSaver(it) },
+        Saver("tide", R.string.saver_tide, R.string.saver_tide_desc, S, Icons.Rounded.Water, false, configurable = true) { TideSaver(it) },
+        Saver("winddown", R.string.saver_winddown, R.string.saver_winddown_desc, S, Icons.Rounded.SelfImprovement, false) { WindDownSaver(it) },
+        Saver("countdown", R.string.saver_countdown, R.string.saver_countdown_desc, S, Icons.Rounded.Numbers, false) { CountDownSaver(it) },
+
+        // Info: what's coming up first, then the sky, then charging
         Saver("weather", R.string.saver_weather, R.string.saver_weather_desc, I, Icons.Rounded.WbCloudy, true, configurable = true, showsNotifications = true) { WeatherSaver(it) },
         Saver("window", R.string.saver_window, R.string.saver_window_desc, I, Icons.Rounded.Window, true, configurable = true) { WeatherWindowSaver(it) },
         Saver("agenda", R.string.saver_agenda, R.string.saver_agenda_desc, I, Icons.Rounded.CalendarMonth, true, configurable = true, showsNotifications = true) { AgendaSaver(it) },
+        Saver("month", R.string.saver_month, R.string.saver_month_desc, I, Icons.Rounded.CalendarViewMonth, true, configurable = true) { MonthSaver(it) },
         Saver("notifications", R.string.saver_notifications, R.string.saver_notifications_desc, I, Icons.Rounded.Notifications, true, configurable = true) { NotificationsSaver(it) },
         Saver("nowplaying", R.string.saver_nowplaying, R.string.saver_nowplaying_desc, I, Icons.Rounded.MusicNote, true, configurable = true, interactive = true) { NowPlayingSaver(it) },
-        Saver("sleep", R.string.saver_sleep, R.string.saver_sleep_desc, I, Icons.Rounded.Hotel, true, showsNotifications = true) { SleepSaver(it) },
-        Saver("sleepcoach", R.string.saver_sleepcoach, R.string.saver_sleepcoach_desc, I, Icons.Rounded.EmojiEmotions, true) { SleepCoachSaver(it) },
         Saver("moon", R.string.saver_moon, R.string.saver_moon_desc, I, Icons.Rounded.DarkMode, false) { SceneMoonSaver(it) },
         Saver("skytonight", R.string.saver_skytonight, R.string.saver_skytonight_desc, I, Icons.Rounded.Stars, true) { SkyTonightSaver(it) },
-        Saver("month", R.string.saver_month, R.string.saver_month_desc, I, Icons.Rounded.CalendarViewMonth, true, configurable = true) { MonthSaver(it) },
         Saver("progress", R.string.saver_progress, R.string.saver_progress_desc, I, Icons.Rounded.Timelapse, true) { ProgressSaver(it) },
-        Saver("world", R.string.saver_world, R.string.saver_world_desc, I, Icons.Rounded.Public, true, configurable = true, showsNotifications = true) { WorldClockSaver(it) },
         Saver("photos", R.string.saver_photos, R.string.saver_photos_desc, I, Icons.Rounded.Photo, true, configurable = true) { PhotoFrameSaver(it) },
+        Saver("charging", R.string.saver_charging, R.string.saver_charging_desc, I, Icons.Rounded.BatteryChargingFull, true, showsNotifications = true) { ChargingSaver(it) },
+        Saver("battery_vial", R.string.saver_battery_vial, R.string.saver_battery_vial_desc, I, Icons.Rounded.Science, true) { ChargeVialSaver(it) },
+        Saver("battery_fill", R.string.saver_battery_fill, R.string.saver_battery_fill_desc, I, Icons.Rounded.Percent, true) { BigFillSaver(it) },
+        Saver("battery_cells", R.string.saver_battery_cells, R.string.saver_battery_cells_desc, I, Icons.Rounded.Battery5Bar, true) { PowerCellsSaver(it) },
+        Saver("battery_flow", R.string.saver_battery_flow, R.string.saver_battery_flow_desc, I, Icons.Rounded.ElectricBolt, true) { PowerFlowSaver(it) },
+        Saver("battery_garden", R.string.saver_battery_garden, R.string.saver_battery_garden_desc, I, Icons.Rounded.LocalFlorist, true) { ChargeGardenSaver(it) },
 
-        // Relax
-        Saver("breathe", R.string.saver_breathe, R.string.saver_breathe_desc, R_, Icons.Rounded.Air, false, configurable = true) { BreatheSaver(it) },
-        Saver("breathe_refined", R.string.saver_breathe, R.string.saver_breathe_refined_desc, R_, Icons.Rounded.Air, false, configurable = true, variantOf = "breathe") { BreatheRefinedSaver(it) },
-        Saver("boxbreath", R.string.saver_boxbreath, R.string.saver_boxbreath_desc, R_, Icons.Rounded.CropSquare, false) { BoxBreathSaver(it) },
-        Saver("tide", R.string.saver_tide, R.string.saver_tide_desc, R_, Icons.Rounded.Water, false, configurable = true) { TideSaver(it) },
-        Saver("winddown", R.string.saver_winddown, R.string.saver_winddown_desc, R_, Icons.Rounded.SelfImprovement, false) { WindDownSaver(it) },
-        Saver("countdown", R.string.saver_countdown, R.string.saver_countdown_desc, R_, Icons.Rounded.Numbers, false) { CountDownSaver(it) },
-        Saver("ocean", R.string.saver_ocean, R.string.saver_ocean_refined_desc, R_, Icons.Rounded.Waves, false) { OceanRefinedSaver(it) },
-        Saver("aurora", R.string.saver_aurora, R.string.saver_aurora_refined_desc, R_, Icons.Rounded.WbTwilight, false) { AuroraRefinedSaver(it) },
-        Saver("lava", R.string.saver_lava, R.string.saver_lava_desc, R_, Icons.Rounded.BubbleChart, false) { LavaLampSaver(it) },
-        Saver("fireflies", R.string.saver_fireflies, R.string.saver_fireflies_desc, R_, Icons.Rounded.AutoAwesome, false) { FirefliesSaver(it) },
-        Saver("rain", R.string.saver_rain, R.string.saver_rain_desc, R_, Icons.Rounded.WaterDrop, false) { SceneRainSaver(it) },
-        Saver("campfire", R.string.saver_campfire, R.string.saver_campfire_desc, R_, Icons.Rounded.LocalFireDepartment, false) { CampfireSaver(it) },
-        Saver("candle", R.string.saver_candle, R.string.saver_candle_desc, R_, Icons.Rounded.Whatshot, false) { CandleSaver(it) },
-        Saver("snow", R.string.saver_snow, R.string.saver_snow_desc, R_, Icons.Rounded.AcUnit, false) { SnowfallSaver(it) },
-        Saver("koi", R.string.saver_koi, R.string.saver_koi_desc, R_, Icons.Rounded.SetMeal, false) { KoiPondSaver(it) },
-        Saver("lighthouse", R.string.saver_lighthouse, R.string.saver_lighthouse_desc, R_, Icons.Rounded.Highlight, false) { SceneLighthouseSaver(it) },
-        Saver("train", R.string.saver_train, R.string.saver_train_desc, R_, Icons.Rounded.Train, false) { SceneTrainSaver(it) },
-        Saver("cat", R.string.saver_cat, R.string.saver_cat_desc, R_, Icons.Rounded.Pets, false, configurable = true) { SleepingCatSaver(it) },
-        Saver("aquarium", R.string.saver_aquarium, R.string.saver_aquarium_desc, R_, Icons.Rounded.Pool, false) { SceneAquariumSaver(it) },
+        // Scenes: illustrated places
+        Saver("ocean", R.string.saver_ocean, R.string.saver_ocean_refined_desc, SC, Icons.Rounded.Waves, false) { OceanRefinedSaver(it) },
+        Saver("aurora", R.string.saver_aurora, R.string.saver_aurora_refined_desc, SC, Icons.Rounded.WbTwilight, false) { AuroraRefinedSaver(it) },
+        Saver("campfire", R.string.saver_campfire, R.string.saver_campfire_desc, SC, Icons.Rounded.LocalFireDepartment, false) { CampfireSaver(it) },
+        Saver("rain", R.string.saver_rain, R.string.saver_rain_desc, SC, Icons.Rounded.WaterDrop, false) { SceneRainSaver(it) },
+        Saver("snow", R.string.saver_snow, R.string.saver_snow_desc, SC, Icons.Rounded.AcUnit, false) { SnowfallSaver(it) },
+        Saver("cat", R.string.saver_cat, R.string.saver_cat_desc, SC, Icons.Rounded.Pets, false, configurable = true) { SleepingCatSaver(it) },
+        Saver("koi", R.string.saver_koi, R.string.saver_koi_desc, SC, Icons.Rounded.SetMeal, false) { KoiPondSaver(it) },
+        Saver("lighthouse", R.string.saver_lighthouse, R.string.saver_lighthouse_desc, SC, Icons.Rounded.Highlight, false) { SceneLighthouseSaver(it) },
+        Saver("train", R.string.saver_train, R.string.saver_train_desc, SC, Icons.Rounded.Train, false) { SceneTrainSaver(it) },
+        Saver("aquarium", R.string.saver_aquarium, R.string.saver_aquarium_desc, SC, Icons.Rounded.Pool, false) { SceneAquariumSaver(it) },
+        Saver("candle", R.string.saver_candle, R.string.saver_candle_desc, SC, Icons.Rounded.Whatshot, false) { CandleSaver(it) },
+        Saver("fireflies", R.string.saver_fireflies, R.string.saver_fireflies_desc, SC, Icons.Rounded.AutoAwesome, false) { FirefliesSaver(it) },
+        Saver("jellyfish", R.string.saver_jellyfish, R.string.saver_jellyfish_desc, SC, Icons.Rounded.ScubaDiving, false) { SceneJellyfishSaver(it) },
+        Saver("orb", R.string.saver_orb, R.string.saver_orb_desc, SC, Icons.Rounded.Lens, false, configurable = true) { SceneOrbSaver(it) },
 
-        // Ambient
-        Saver("starfield", R.string.saver_starfield, R.string.saver_starfield_refined_desc, A, Icons.Rounded.Star, false) { StarfieldRefinedSaver(it) },
-        Saver("orbits", R.string.saver_orbits, R.string.saver_orbits_refined_desc, A, Icons.Rounded.Language, false) { OrbitsRefinedSaver(it) },
-        Saver("constellation", R.string.saver_constellation, R.string.saver_constellation_refined_desc, A, Icons.Rounded.AutoAwesome, false) { ConstellationRefinedSaver(it) },
-        Saver("plexus", R.string.saver_plexus, R.string.saver_plexus_desc, A, Icons.Rounded.Hub, false) { ConstellationSaver(it) },
-        Saver("orb", R.string.saver_orb, R.string.saver_orb_desc, A, Icons.Rounded.Lens, false, configurable = true) { SceneOrbSaver(it) },
-        Saver("jellyfish", R.string.saver_jellyfish, R.string.saver_jellyfish_desc, A, Icons.Rounded.ScubaDiving, false) { SceneJellyfishSaver(it) },
-        Saver("colorfield", R.string.saver_colorfield, R.string.saver_colorfield_desc, A, Icons.Rounded.Gradient, false) { ColorFieldSaver(it) },
-        Saver("contours", R.string.saver_contours, R.string.saver_contours_desc, A, Icons.Rounded.Terrain, false) { ContoursSaver(it) },
-        Saver("ridgelines", R.string.saver_ridgelines, R.string.saver_ridgelines_desc, A, Icons.Rounded.Landscape, false) { RidgelinesSaver(it) },
-        Saver("flow", R.string.saver_flow, R.string.saver_flow_desc, A, Icons.Rounded.Tornado, false) { FlowFieldSaver(it) },
-        Saver("harmonograph", R.string.saver_harmonograph, R.string.saver_harmonograph_desc, A, Icons.Rounded.Gesture, false) { HarmonographSaver(it) },
-        Saver("pendulum", R.string.saver_pendulum, R.string.saver_pendulum_desc, A, Icons.Rounded.Timeline, false, configurable = true) { PendulumWaveSaver(it) },
-        Saver("matrix", R.string.saver_matrix, R.string.saver_matrix_desc, A, Icons.Rounded.Code, false) { MatrixSaver(it) },
-        Saver("life", R.string.saver_life, R.string.saver_life_desc, A, Icons.Rounded.GridOn, false) { GameOfLifeSaver(it) },
+        // Abstract: patterns and motion
+        Saver("starfield", R.string.saver_starfield, R.string.saver_starfield_refined_desc, AB, Icons.Rounded.Star, false) { StarfieldRefinedSaver(it) },
+        Saver("orbits", R.string.saver_orbits, R.string.saver_orbits_refined_desc, AB, Icons.Rounded.Language, false) { OrbitsRefinedSaver(it) },
+        Saver("constellation", R.string.saver_constellation, R.string.saver_constellation_refined_desc, AB, Icons.Rounded.AutoAwesome, false) { ConstellationRefinedSaver(it) },
+        Saver("plexus", R.string.saver_plexus, R.string.saver_plexus_desc, AB, Icons.Rounded.Hub, false) { ConstellationSaver(it) },
+        Saver("flow", R.string.saver_flow, R.string.saver_flow_desc, AB, Icons.Rounded.Tornado, false) { FlowFieldSaver(it) },
+        Saver("colorfield", R.string.saver_colorfield, R.string.saver_colorfield_desc, AB, Icons.Rounded.Gradient, false) { ColorFieldSaver(it) },
+        Saver("contours", R.string.saver_contours, R.string.saver_contours_desc, AB, Icons.Rounded.Terrain, false) { ContoursSaver(it) },
+        Saver("ridgelines", R.string.saver_ridgelines, R.string.saver_ridgelines_desc, AB, Icons.Rounded.Landscape, false) { RidgelinesSaver(it) },
+        Saver("harmonograph", R.string.saver_harmonograph, R.string.saver_harmonograph_desc, AB, Icons.Rounded.Gesture, false) { HarmonographSaver(it) },
+        Saver("pendulum", R.string.saver_pendulum, R.string.saver_pendulum_desc, AB, Icons.Rounded.Timeline, false, configurable = true) { PendulumWaveSaver(it) },
+        Saver("lava", R.string.saver_lava, R.string.saver_lava_desc, AB, Icons.Rounded.BubbleChart, false) { LavaLampSaver(it) },
+        Saver("matrix", R.string.saver_matrix, R.string.saver_matrix_desc, AB, Icons.Rounded.Code, false) { MatrixSaver(it) },
+        Saver("life", R.string.saver_life, R.string.saver_life_desc, AB, Icons.Rounded.GridOn, false) { GameOfLifeSaver(it) },
     )
 
     private val byId = all.associateBy { it.id }
