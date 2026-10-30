@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
 import android.util.LruCache
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -41,7 +42,6 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -86,6 +86,9 @@ private object StillCache {
 
     /** Savers whose picture couldn't be taken: they stay live. */
     val failed = mutableStateListOf<String>()
+
+    /** Failed attempts per saver. One bad frame (often a card mid-layout) isn't enough to give up. */
+    val attempts = HashMap<String, Int>()
 
     private val io = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -224,10 +227,10 @@ fun SaverStill(
             .background(Color.Black)
             .clearAndSetSemantics { },
     ) {
-        if (still != null) {
-            Image(still.image, null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
-        } else {
-            StillPlaceholder(saver)
+        // The new picture fades in over the old one (or the placeholder).
+        Crossfade(still?.image, label = "still") { image ->
+            if (image != null) Image(image, null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
+            else StillPlaceholder(saver)
         }
         if (live) {
             val layer = rememberGraphicsLayer()
@@ -236,10 +239,10 @@ fun SaverStill(
                 Modifier
                     .fillMaxSize()
                     .drawWithContent {
-                        // Layers need a hardware canvas; anywhere else just draw (and stay live).
+                        // Record the live render without showing it: a card that starts moving and then
+                        // freezes looks broken. Layers need a hardware canvas; anywhere else just draw.
                         if (drawContext.canvas.nativeCanvas.isHardwareAccelerated) {
                             layer.record { this@drawWithContent.drawContent() }
-                            drawLayer(layer)
                         } else {
                             drawContent()
                         }
@@ -261,22 +264,27 @@ fun SaverStill(
                 delay(if (still == null) 900 else 600)
                 // The picture needs at least one drawn frame.
                 var waits = 0
-                while (layer.size == IntSize.Zero && waits++ < 20) delay(100)
-                if (layer.size == IntSize.Zero) {
+                while ((layer.size.width <= 0 || layer.size.height <= 0) && waits++ < 20) delay(100)
+                if (layer.size.width <= 0 || layer.size.height <= 0) {
                     // Never drawn (scrolled away mid-render): try again later rather than giving up on it.
                     scheduler.release(key)
                     scheduler.request(key, missing = still == null)
                     return@LaunchedEffect
                 }
-                runCatching { shrink(layer.toImageBitmap()) }.onFailure {
-                    // Fall back to a live thumbnail for this one.
+                val image = runCatching { shrink(layer.toImageBitmap()) }.onFailure {
                     Log.w("Beddery", "Couldn't take a thumbnail of ${saver.id}", it)
-                    StillCache.failed += saver.id
-                }.getOrNull()?.let {
-                    StillCache.put(key, base, Still(it, minute))
-                    StillCache.save(dir, base, it)
-                }
+                }.getOrNull()
                 scheduler.release(key)
+                if (image != null) {
+                    StillCache.attempts -= saver.id
+                    StillCache.put(key, base, Still(image, minute))
+                    StillCache.save(dir, base, image)
+                } else if ((StillCache.attempts.merge(saver.id, 1, Int::plus) ?: 1) >= 3) {
+                    // Keeps failing: fall back to a live thumbnail for this one.
+                    StillCache.failed += saver.id
+                } else {
+                    scheduler.request(key, missing = still == null)
+                }
             }
         }
     }
